@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>✨ PerfumeFlow Pro v14.0 (Enhanced Tasks)</title>
+    <title>✨ PerfumeFlow Pro v12.4 (CRM/Analytics Upgrade)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* (CSS code remains the same as in v13.0 for consistency) */
         :root {
             --primary: #4F46E5; /* Indigo */
             --primary-hover: #4338ca;
@@ -118,7 +117,7 @@
 
         /* --- FORMS --- */
         .grid-3-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
-        .grid-2-col { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; } /* Adjusted for mobile */
+        .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
         label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #4B5563; }
         
@@ -204,7 +203,6 @@
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .stat-card { background: linear-gradient(135deg, var(--primary), var(--primary-hover)); color: white; padding: 20px; border-radius: 12px; box-shadow: var(--shadow); }
         .stat-card.green { background: linear-gradient(135deg, var(--secondary), #059669); }
-        .stat-card.danger { background: linear-gradient(135deg, var(--danger), #CC1F1F); } 
         .stat-card h3 { color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-bottom: 5px; font-weight: 500; }
         .stat-card .value { font-size: 1.8rem; font-weight: 800; }
 
@@ -214,7 +212,6 @@
         .modal-header { padding: 15px 20px; border-bottom: 1px solid var(--border); background: #F9FAFB; display: flex; justify-content: space-between; align-items: center; }
         .modal-body { padding: 20px; }
         .receipt-total { font-size: 1.5rem; font-weight: 800; text-align: right; color: var(--primary); margin-top: 15px; border-top: 2px dashed var(--border); padding-top: 15px; }
-        .modal.active { display: block; }
 
         /* Print Logic */
         @media print {
@@ -223,57 +220,6 @@
             .modal { position: absolute; left: 0; top: 0; background: white; }
             .no-print { display: none; }
         }
-
-        /* --- NEW TASK STYLES --- */
-        .task-item {
-            background: #F9FAFB;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-            transition: all 0.2s;
-        }
-
-        .task-item.completed {
-            background: #f0fdf4; /* Light green for completed */
-            border-left: 5px solid var(--secondary);
-            opacity: 0.8;
-        }
-
-        .task-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .task-title {
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--primary-hover);
-        }
-
-        .task-details {
-            font-size: 0.9rem;
-            color: #4B5563;
-            line-height: 1.6;
-        }
-        .task-details strong {
-            color: var(--dark);
-            font-weight: 600;
-        }
-        .task-comment {
-            margin-top: 10px;
-            padding: 8px;
-            background: #FEF3C7; /* Amber light background */
-            border-left: 3px solid var(--warning);
-            border-radius: 4px;
-            font-style: italic;
-        }
-        /* --- END NEW TASK STYLES --- */
-
 
         /* Mobile specific adjustments */
         @media (max-width: 768px) {
@@ -284,8 +230,8 @@
             .navbar-brand { margin: 0 auto; }
             .navbar { justify-content: center; }
         }
-
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -298,8 +244,9 @@
             <button class="nav-btn" onclick="showSection('input-form', this)"><i class="fa-solid fa-cart-plus"></i> Продаж</button>
             <button class="nav-btn" onclick="showSection('multi-calculator', this)"><i class="fa-solid fa-list-check"></i> Замовлення</button>
             <button class="nav-btn" onclick="showSection('transactions', this)"><i class="fa-solid fa-clock-rotate-left"></i> Історія</button>
-            <button class="nav-btn" onclick="showSection('tasks', this)"><i class="fa-solid fa-clipboard-list"></i> Задачі</button>
             <button class="nav-btn" onclick="showSection('admin-panel', this)"><i class="fa-solid fa-gears"></i> Адмінка</button>
+            <button class="nav-btn" onclick="showSection('crm-management', this); renderClientList();"><i class="fa-solid fa-users"></i> CRM</button>
+            <button class="nav-btn" onclick="showSection('analytics-dashboard', this); renderAnalyticsCharts();"><i class="fa-solid fa-chart-line"></i> Аналітика</button>
         </div>
     </nav>
 
@@ -322,31 +269,17 @@
                     <h3>Продажів</h3>
                     <div class="value" id="dash-count">0</div>
                 </div>
-                <div class="stat-card danger" id="dash-low-stock-count">
-                    <h3>Низький Запас (Склад)</h3>
-                    <div class="value" id="dash-low-stock-count-value">0</div>
-                </div>
             </div>
             
             <div class="card">
                 <h3><i class="fa-solid fa-bolt"></i> Швидкі дії</h3>
                 <div class="grid-2-col">
                     <button class="btn-primary" onclick="showSection('input-form', document.querySelectorAll('.nav-btn')[1])"><i class="fa-solid fa-plus"></i> Новий продаж</button>
-                    <button class="btn-success" onclick="showSection('tasks', document.querySelectorAll('.nav-btn')[4])"><i class="fa-solid fa-clipboard-list"></i> Переглянути Задачі</button>
+                    <button class="btn-success" onclick="showSection('report', null)"><i class="fa-solid fa-file-invoice-dollar"></i> Створити звіт</button>
                 </div>
             </div>
         </section>
 
-        <section id="tasks" class="content-section">
-            <div class="card">
-                <h2><i class="fa-solid fa-clipboard-list"></i> Список Завдань</h2>
-                <p>Автоматичні завдання (Нові продажі/замовлення), які потребують виконання/відправки.</p>
-                
-                <div id="tasks-list-container" style="margin-top: 20px;">
-                    </div>
-            </div>
-        </section>
-        
         <section id="input-form" class="content-section">
             <div class="card">
                 <h2><i class="fa-solid fa-bottle-droplet"></i> Швидкий продаж</h2>
@@ -365,15 +298,6 @@
                     </div>
                 </div>
                 
-                <h3 style="margin-top: 20px;"><i class="fa-solid fa-truck-moving"></i> Реквізити для відправки (для Задач)</h3>
-                <div class="grid-2-col" style="margin-bottom: 15px;">
-                    <div><label>Номер телефону</label><input type="text" id="phoneSingle" placeholder="+380..."></div>
-                    <div><label>ПІБ (повністю)</label><input type="text" id="fullNameSingle" placeholder="Іванов Іван..."></div>
-                    <div><label>Місто</label><input type="text" id="citySingle" placeholder="Напр: Київ"></div>
-                    <div><label>Відділення НП</label><input type="text" id="postOfficeSingle" placeholder="№X або Адреса"></div>
-                </div>
-                <label>Коментар до замовлення (для Задачі)</label>
-                <textarea id="commentsSingle" rows="2" placeholder="Напр: Скинути реквізити на Вайбер..." style="margin-bottom: 20px;"></textarea>
                 <label>Назва Парфуму</label>
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                     <input type="text" id="perfumeName" list="perfumeList" placeholder="Почніть вводити назву...">
@@ -394,16 +318,7 @@
                      <div><label>Джерело</label><select id="saleSourceOrder"></select></div>
                      <div><label>Клієнт</label><input type="text" id="clientNameOrder" placeholder="Ім'я клієнта" list="clientList"></div>
                 </div>
-                
-                <h3 style="margin-top: 20px;"><i class="fa-solid fa-truck-moving"></i> Реквізити для відправки</h3>
-                <div class="grid-2-col" style="margin-bottom: 15px;">
-                    <div><label>Номер телефону</label><input type="text" id="phoneOrder" placeholder="+380..."></div>
-                    <div><label>ПІБ (повністю)</label><input type="text" id="fullNameOrder" placeholder="Іванов Іван..."></div>
-                    <div><label>Місто</label><input type="text" id="cityOrder" placeholder="Напр: Київ"></div>
-                    <div><label>Відділення НП</label><input type="text" id="postOfficeOrder" placeholder="№X або Адреса"></div>
-                </div>
-                <label>Коментар до замовлення</label>
-                <textarea id="commentsOrder" rows="2" placeholder="Напр: Скинути реквізити на Вайбер..." style="margin-bottom: 20px;"></textarea>
+
                 <div style="background: #F9FAFB; padding: 15px; border-radius: 8px; border: 1px dashed var(--border); margin-bottom: 15px;">
                     <div class="grid-2-col">
                         <div><label>Парфум</label><input type="text" id="orderPerfumeName" list="perfumeList"></div>
@@ -422,11 +337,8 @@
                 <div id="orderTotalSection" style="margin: 20px 0; font-size: 1.2rem; font-weight: bold; text-align: right; color: var(--primary);"></div>
                 
                 <h3 style="margin-top: 20px;"><i class="fa-solid fa-copy"></i> Текст замовлення (для копіювання)</h3>
-                <textarea id="orderSummaryOutput" rows="4" readonly placeholder="Текст замовлення з'явиться тут..." style="margin-bottom: 10px;"></textarea>
-                <button class="btn-warning" onclick="copyOrderSummary()"><i class="fa-solid fa-copy"></i> Копіювати текст</button>
-                <label>Номер ТТН (опційно)</label>
-                <input type="text" id="ttnNumberOrder" placeholder="Номер ТТН (Нова Пошта/Укрпошта)" style="margin-bottom: 20px;">
-                
+                <textarea id="orderSummaryOutput" rows="4" readonly placeholder="Текст замовлення з'явиться тут..."></textarea>
+                <button class="btn-warning" style="margin-top: 10px;" onclick="copyOrderSummary()"><i class="fa-solid fa-copy"></i> Копіювати текст</button>
                 <div class="grid-2-col" style="margin-top: 20px;">
                     <button class="btn-success" onclick="processOrder()"><i class="fa-solid fa-cash-register"></i> Оформити</button>
                     <button class="btn-danger" onclick="clearOrder()"><i class="fa-solid fa-trash"></i> Очистити</button>
@@ -439,7 +351,7 @@
                 <h2><i class="fa-solid fa-chart-line"></i> Звітність</h2>
                 <div class="grid-2-col" style="margin-bottom: 15px;">
                     <div><label>З дати</label><input type="date" id="startDate"></div>
-                    <div><label>По дату</label><input type="date" id="endDate"></div>
+                    <div><div><label>По дату</label><input type="date" id="endDate"></div></div>
                 </div>
                 <button class="btn-primary" onclick="generateReport()"><i class="fa-solid fa-filter"></i> Сформувати Звіт</button>
                 <div id="reportOutput" style="margin-top: 20px;"></div>
@@ -457,7 +369,7 @@
 
                 <div class="table-responsive">
                     <table id="transaction-history-table">
-                        <thead><tr><th>Дата</th><th>Клієнт</th><th>Джерело</th><th>ТТН</th><th>Парфум</th><th class="text-right">Сума</th><th class="text-right">Прибуток</th><th class="text-right">Дія</th></tr></thead>
+                        <thead><tr><th>Дата</th><th>Клієнт</th><th>Інфо</th><th>Парфум</th><th class="text-right">Сума</th><th class="text-right">Прибуток</th><th class="text-right">Дія</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -470,7 +382,7 @@
                 <h2><i class="fa-solid fa-users"></i> CRM Клієнтів</h2>
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <input type="text" id="clientSearchInput" list="clientList" placeholder="Введіть ім'я клієнта...">
-                    <button class="btn-primary" style="width: auto;" onclick="showClientHistory()"><i class="fa-solid fa-search"></i> Знайти</button>
+                    <button class="btn-primary" style="width: auto;" onclick="showClientHistory()"><i class="fa-solid fa-search"></i></button>
                 </div>
                 <div id="clientCrmSummary"></div>
                 <div class="table-responsive">
@@ -485,26 +397,9 @@
         <section id="admin-panel" class="content-section">
             <div class="grid-2-col" style="margin-bottom: 20px;">
                 <button class="btn-primary" onclick="showSection('report', null)">📊 Фінансові звіти</button>
-                <button class="btn-primary" onclick="showSection('client-crm', null)">👥 База клієнтів (CRM)</button>
+                <button class="btn-primary" onclick="showSection('client-history', null)">👥 Історія Клієнта</button>
                 <button class="btn-primary" onclick="showSection('expenses', null)">💸 Додати Витрату</button>
                 <button class="btn-primary" onclick="showSection('calculator', null)">🧮 Калькулятор ціни</button>
-            </div>
-            
-            <div class="card">
-                <h3><i class="fa-solid fa-warehouse"></i> Складський облік (Залишок)</h3>
-                <div class="grid-2-col" style="margin-bottom: 15px;">
-                    <div><label>Парфум</label><input type="text" id="inventoryPerfumeName" list="perfumeList"></div>
-                    <div><label>Об'єм (мл)</label><input type="number" id="inventoryVolume" placeholder="Напр: 500"></div>
-                </div>
-                <button class="btn-primary" onclick="addStock()"><i class="fa-solid fa-plus-square"></i> Додати Запас</button>
-                
-                <h4 style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">Поточні залишки:</h4>
-                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                    <table id="inventory-list-table">
-                        <thead><tr><th>Назва</th><th class="text-right">Залишок (мл)</th><th class="text-right">Дія</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
             </div>
             
             <div class="card">
@@ -559,233 +454,589 @@
                     </div>
                 </div>
             </div>
-            
-            <div class="card">
-                <h3><i class="fa-solid fa-database"></i> Управління Даними (Бек-ап/Відновлення)</h3>
-                
-                <button class="btn-primary" onclick="exportDataToJSON()"><i class="fa-solid fa-download"></i> Зробити Бек-ап (JSON файл)</button>
-                
-                <h4 style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;"><i class="fa-solid fa-cloud-upload-alt"></i> Синхронізація (Телефон)</h4>
-                
-                <button class="btn-warning" onclick="showSyncDataModal()"><i class="fa-solid fa-copy"></i> Скопіювати Дані для Синхронізації</button>
-                
-                <h4 style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;"><i class="fa-solid fa-upload"></i> Відновлення (Імпорт)</h4>
-                <input type="file" id="importFileInput" accept=".json" style="margin-bottom: 10px;">
-                <button class="btn-warning" onclick="importDataFromJSON()"><i class="fa-solid fa-upload"></i> Завантажити та Відновити</button>
-                
-                <p style="margin-top: 10px; font-size: 0.85rem; color: var(--danger); font-weight: 600;">
-                    Увага! Імпорт **повністю замінить** поточні дані на ті, що знаходяться у файлі.
-                </p>
+
+            <div class="card" style="border: 1px solid var(--danger);">
+                <h3><i class="fa-solid fa-database"></i> Керування Даними</h3>
+                <p>Видалення даних є незворотнім!</p>
+                <div class="grid-2-col">
+                    <button class="btn-danger" onclick="clearAllData()"><i class="fa-solid fa-exclamation-triangle"></i> Очистити ВСІ ДАНІ</button>
+                    <button class="btn-danger" onclick="resetDefaultData()"><i class="fa-solid fa-rotate-left"></i> Скинути до початкових налаштувань</button>
+                </div>
             </div>
         </section>
 
-        <section id="expenses" class="content-section">
+        <section id="calculator" class="content-section" style="display:none;">
             <div class="card">
-                <h2><i class="fa-solid fa-money-bill-transfer"></i> Додати Витрату</h2>
-                <input type="text" id="expenseDescription" placeholder="Опис (Напр: Атомайзери 10мл)">
-                <input type="number" id="expenseAmount" placeholder="Сума (грн)">
-                <button class="btn-danger" onclick="addExpense()"><i class="fa-solid fa-minus-circle"></i> Зафіксувати Витрату</button>
-                <div id="expenseListOutput" style="margin-top: 20px;"></div>
-            </div>
-        </section>
-        
-        <section id="calculator" class="content-section">
-            <div class="card">
-                <h2><i class="fa-solid fa-calculator"></i> Калькулятор Ціни</h2>
+                <h2><i class="fa-solid fa-calculator"></i> Калькулятор Цін</h2>
                 <div class="grid-2-col" style="margin-bottom: 15px;">
-                    <div><label>Парфум</label><input type="text" id="calcPerfumeName" list="perfumeList"></div>
-                    <div><label>Об'єм</label><select id="calcFlaconVolume"></select></div>
+                    <div><label>Парфум</label><input type="text" id="calcPerfumeName" list="perfumeList" onchange="calculatePrice()"></div>
+                    <div><label>Об'єм (мл)</label><select id="calcFlaconVolume" onchange="calculatePrice()"></select></div>
                 </div>
-                <label>Націнка</label><select id="calcMarkupTier"></select>
-                <button class="btn-primary" style="margin-top: 10px;" onclick="calculatePrice()"><i class="fa-solid fa-sync"></i> Розрахувати</button>
+                <div><label>Націнка</label><select id="calcMarkupTier" onchange="calculatePrice()"></select></div>
                 <div id="calculatorOutput" style="margin-top: 20px;"></div>
             </div>
         </section>
 
-
-    </div> 
-
-    <div id="receiptModal" class="modal" onclick="if(event.target.id === 'receiptModal') closeReceiptModal()">
-        <div class="modal-content">
-            <div id="receiptContent">
+        <section id="expenses" class="content-section" style="display:none;">
+            <div class="card">
+                <h2><i class="fa-solid fa-money-bill-transfer"></i> Облік Витрат</h2>
+                <div class="grid-2-col">
+                    <input type="text" id="expenseDescription" placeholder="Опис витрати">
+                    <input type="number" id="expenseAmount" placeholder="Сума (грн)">
                 </div>
-            <div style="padding: 0 20px 20px 20px;" class="no-print">
-                 <button class="btn-success" onclick="window.print()" style="margin-top:20px;"><i class="fa-solid fa-print"></i> Друк</button>
-                 <button class="btn-danger" onclick="closeReceiptModal()" style="margin-top:10px;"><i class="fa-solid fa-times-circle"></i> Закрити</button>
+                <button class="btn-danger" onclick="addExpense()"><i class="fa-solid fa-plus"></i> Додати витрату</button>
+                
+                <h3 style="margin-top: 30px;">Історія Витрат</h3>
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table id="expense-list-table">
+                        <thead><tr><th>Дата</th><th>Опис</th><th class="text-right">Сума</th><th class="text-right">Дія</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
+        </section>
+
+        <section id="client-history" class="content-section" style="display:none;">
+             <div class="card">
+                <h2><i class="fa-solid fa-users"></i> Історія Клієнта</h2>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <input type="text" id="clientSearchInput" list="clientList" placeholder="Введіть ім'я клієнта...">
+                    <button class="btn-primary" style="width: auto;" onclick="showClientHistory()"><i class="fa-solid fa-search"></i></button>
+                </div>
+                <div id="clientCrmSummary"></div>
+                <div class="table-responsive">
+                    <table id="client-history-table">
+                        <thead><tr><th>Дата</th><th>Парфум</th><th class="text-right">Сума</th><th class="text-right">Прибуток</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
+        <section id="crm-management" class="content-section" style="display:none;">
+            <h2>Управління клієнтами</h2>
+            <p class="text-secondary">Тут ви можете зберігати розширені дані клієнтів (телефон, email, дата народження) та переглядати статистику.</p>
+            
+            <div class="card">
+                <h3>Додати / Оновити клієнта</h3>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <input type="text" id="newClientName" placeholder="Ім'я клієнта (Унікальне)" class="input-light">
+                    <input type="text" id="newClientPhone" placeholder="Телефон" class="input-light">
+                    <input type="email" id="newClientEmail" placeholder="Email" class="input-light">
+                    <input type="date" id="newClientDOB" title="Дата народження" class="input-light">
+                    <button class="btn-primary" onclick="addUpdateClient(document.getElementById('newClientName').value.trim(), document.getElementById('newClientPhone').value.trim(), document.getElementById('newClientEmail').value.trim(), document.getElementById('newClientDOB').value.trim())">➕ Зберегти / Оновити клієнта</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Список клієнтів та статистика</h3>
+                <div class="table-responsive">
+                    <table id="clientListTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Ім'я</th>
+                                <th>Телефон</th>
+                                <th>Email</th>
+                                <th>Покупок</th>
+                                <th class="text-right">Загальна виручка</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="analytics-dashboard" class="content-section" style="display:none;">
+            <h2>📊 Аналітична панель</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card" style="background: linear-gradient(135deg, var(--primary), var(--primary-hover));">
+                    <h3>Загальний прибуток (Вся історія)</h3>
+                    <div class="value" id="totalProfitCard">0 ₴</div>
+                </div>
+                <div class="stat-card green" style="background: linear-gradient(135deg, var(--secondary), #059669);">
+                    <h3>Кількість транзакцій</h3>
+                    <div class="value" id="totalTransactionsCard">0</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Динаміка виручки (за останні 30 днів)</h3>
+                <div style="height: 300px;"><canvas id="revenueChart"></canvas></div>
+            </div>
+            
+            <div class="card">
+                <h3>Топ-5 найпопулярніших парфумів (за об'ємом, мл)</h3>
+                <div style="height: 300px;"><canvas id="topPerfumeChart"></canvas></div>
+            </div>
+        </section>
+        </div> 
+
+    <div id="receiptModal" class="modal">
+        <div class="modal-content">
+            <div id="receiptContent"></div>
         </div>
     </div>
     
-    <div id="syncModal" class="modal" onclick="if(event.target.id === 'syncModal') closeSyncModal()">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 style="margin:0"><i class="fa-solid fa-copy"></i> Дані для Синхронізації</h3>
-                <button class="btn-sm" style="width:auto" onclick="closeSyncModal()">✕</button>
-            </div>
-            <div class="modal-body">
-                <p>Скопіюйте цей текст. Його можна вставити в поле нижче на іншому пристрої для відновлення даних.</p>
-                <textarea id="syncDataOutput" rows="15" readonly style="width: 100%; resize: none; font-size: 0.75rem;"></textarea>
-                <button class="btn-success" style="margin-top: 10px;" onclick="copySyncData()"><i class="fa-solid fa-copy"></i> Копіювати ВСІ Дані</button>
-                <p style="margin-top: 20px; border-top: 1px dashed var(--border); padding-top: 15px;">**АБО ВСТАВИТИ ДЛЯ ІМПОРТУ (на приймаючому пристрої):**</p>
-                <textarea id="syncDataInput" rows="5" placeholder="Вставте скопійовані дані сюди..." style="width: 100%; resize: none;"></textarea>
-                <button class="btn-warning" style="margin-top: 10px;" onclick="importDataFromSync()"><i class="fa-solid fa-upload"></i> Відновити з тексту</button>
-            </div>
-        </div>
-    </div>
-
-
     <datalist id="perfumeList"></datalist>
     <datalist id="clientList"></datalist>
-
     <script>
-        // --- CONFIGURATION KEYS ---
+        // --- CONFIG ---
         const CONFIG_KEYS = {
             PRICES: 'perfumePrices',
-            FLACONS: 'flaconCosts',
             VOLUMES: 'flaconVolumes',
+            FLACONS: 'flaconCosts',
             MARKUPS: 'markupPresets',
             SOURCES: 'salesSources',
             TRANSACTIONS: 'transactions',
             EXPENSES: 'expenses',
-            INVENTORY: 'perfumeStock', 
-            TASKS: 'userTasks',
         };
 
-        // --- GLOBAL DATA (In-Memory Copy) ---
         let PERFUME_PRICES = {};
-        let FLACON_VOLUMES = [5, 10, 15, 20, 30, 50, 60]; 
+        let FLACON_VOLUMES = [5, 10, 15, 20, 30, 50, 60];
         let FLACON_COSTS = { 5: 25, 10: 27, 15: 30, 20: 40, 30: 50, 50: 70, 60: 70 };
-        let MARKUP_PRESETS = { "Роздріб": 0.12, "Опт-1": 0.08, "VIP": 0.10 }; 
+        let MARKUP_PRESETS = { "Роздріб": 0.12, "Опт-1": 0.08, "VIP": 0.10 };
         let SALES_SOURCES = ["Instagram", "OLX", "Магазин", "Реферал"];
         let CURRENT_ORDER_LIST = []; 
-        let PERFUME_STOCK = {}; 
-        const LOW_STOCK_THRESHOLD = 20; 
-        let TASKS = []; 
 
-        // --- INITIAL DATA (for first run) ---
+        // --- INITIAL DATA ---
+        // С/С: basePrice (грн/мл), discountVolume (мл), discountPrice (грн/мл)
         const INITIAL_PRICES = {
-            "Creed Aventus": { basePrice: 45, discountVolume: 10, discountPrice: 42 },
-            "Baccarat Rouge 540": { basePrice: 50, discountVolume: 10, discountPrice: 48 },
-            "Tom Ford Tobacco Vanille": { basePrice: 60, discountVolume: 5, discountPrice: 58 },
-            "Dior Sauvage Elixir": { basePrice: 70, discountVolume: 5, discountPrice: 65 },
-            "YSL Y EDP": { basePrice: 40, discountVolume: 5, discountPrice: 38 },
-            "Tiziana Terenzi Kirke": { basePrice: 48, discountVolume: 5, discountPrice: 46 },
-            "Montale Intense Cafe": { basePrice: 35, discountVolume: 5, discountPrice: 34 },
-            "Mancera Cedrat Boise": { basePrice: 34, discountVolume: 5, discountPrice: 32 },
-            "Versace Eros": { basePrice: 23, discountVolume: 5, discountPrice: 20 },
-            "Armani Acqua di Gio": { basePrice: 30, discountVolume: 5, discountPrice: 28 },
-            "Chanel Bleu de Chanel": { basePrice: 50, discountVolume: 5, discountPrice: 47 }
+          "27 87 Perfumes Genetic Bliss": { "basePrice": 160, "discountVolume": 5, "discountPrice": 155 },
+                "Acqua di Parma Colonia Club": { "basePrice": 45, "discountVolume": 5, "discountPrice": 40 },
+                "Acqua di Parma Colonia Futura": { "basePrice": 35, "discountVolume": 5, "discountPrice": 33 },
+                "Acqua di Parma Colonia Intensa": { "basePrice": 36, "discountVolume": 5, "discountPrice": 35 },
+                "Acqua di Parma Colonia Pura": { "basePrice": 37, "discountVolume": 5, "discountPrice": 35 },
+                "Afnan 9 PM Black": { "basePrice": 20, "discountVolume": 10, "discountPrice": 18 },
+                "Afnan 9 PM Rebel": { "basePrice": 20, "discountVolume": 5, "discountPrice": 18 },
+                "Afnan 9am Pour Femme": { "basePrice": 20, "discountVolume": 5, "discountPrice": 18 },
+                "Afnan 9pm Pour Femme": { "basePrice": 18, "discountVolume": 5, "discountPrice": 16 },
+                "Afnan Cherry Bouquet": { "basePrice": 35, "discountVolume": 5, "discountPrice": 30 },
+                "Afnan La Fleur Bouquet": { "basePrice": 30, "discountVolume": 5, "discountPrice": 28 },
+                "Afnan Mirsaal With Love": { "basePrice": 23, "discountVolume": 5, "discountPrice": 22 },
+                "Afnan Mirsaal of Trust": { "basePrice": 25, "discountVolume": 5, "discountPrice": 24 },
+                "Afnan Rare Carbon": { "basePrice": 22, "discountVolume": 5, "discountPrice": 21 },
+                "Afnan Supremacy Collector's Edition": { "basePrice": 30, "discountVolume": 5, "discountPrice": 27 },
+                "Afnan Supremacy Femme Pink": { "basePrice": 24, "discountVolume": 5, "discountPrice": 22 },
+                "Afnan Supremacy Gala": { "basePrice": 28, "discountVolume": 5, "discountPrice": 25 },
+                "Afnan Supremacy in Oud": { "basePrice": 25, "discountVolume": 5, "discountPrice": 23 },
+                "Afnan Supremacy Incense": { "basePrice": 16, "discountVolume": 5, "discountPrice": 15 },
+                "Afnan Supremacy Not Only Intense": { "basePrice": 27, "discountVolume": 5, "discountPrice": 26 },
+                "Afnan Supremacy Silver": { "basePrice": 25, "discountVolume": 10, "discountPrice": 22 },
+                "Afnan Supremacy in Heaven": { "basePrice": 23, "discountVolume": 10, "discountPrice": 22 },
+                "Afnan Tobacco Rush": { "basePrice": 30, "discountVolume": 5, "discountPrice": 28 },
+                "Al Haramain Amber Oud Aqua Dubai": { "basePrice": 32, "discountVolume": 5, "discountPrice": 28 },
+                "Al Haramain Amber Oud Dubai Night": { "basePrice": 32, "discountVolume": 5, "discountPrice": 29 },
+                "Al Haramain Amber Oud Gold Edition Extreme": { "basePrice": 32, "discountVolume": 5, "discountPrice": 30 },
+                "Al Haramain Amber Oud Ruby Edition": { "basePrice": 30, "discountVolume": 5, "discountPrice": 25 },
+                "Al Haramain Amber Oud Tobacco Edition": { "basePrice": 38, "discountVolume": 5, "discountPrice": 37 },
+                "Al Haramain Detour Noir": { "basePrice": 14, "discountVolume": 10, "discountPrice": 13 },
+                "Al Haramain Detour Noir Exclusif": { "basePrice": 20, "discountVolume": 5, "discountPrice": 17 },
+                "Al Haramain L’Aventure": { "basePrice": 18, "discountVolume": 10, "discountPrice": 14 },
+                "Al Haramain L’Aventure Intense": { "basePrice": 28, "discountVolume": 10, "discountPrice": 26 },
+                "Al Haramain L’Aventure Fraiche": { "basePrice": 29, "discountVolume": 5, "discountPrice": 26 },
+                "Alfred Dunhill Icon": { "basePrice": 34, "discountVolume": 5, "discountPrice": 32 },
+                "Amouage Interlude Man": { "basePrice": 75, "discountVolume": 5, "discountPrice": 74 },
+                "Antonio Banderas Blue Seduction Wave": { "basePrice": 12, "discountVolume": 10, "discountPrice": 11 },
+                "Ard al Zaafaran Midnight Oud": { "basePrice": 21, "discountVolume": 5, "discountPrice": 20 },
+                "Armaf Blue Homme": { "basePrice": 15, "discountVolume": 10, "discountPrice": 14 },
+                "Armaf Club De Nuit Blue Iconic": { "basePrice": 23, "discountVolume": 5, "discountPrice": 20 },
+                "Armaf Club De Nuit Intense Woman": { "basePrice": 17, "discountVolume": 5, "discountPrice": 15 },
+                "Armaf Club De Nuit Sillage": { "basePrice": 20, "discountVolume": 10, "discountPrice": 19 },
+                "Armaf Club De Nuit Urban Elixir": { "basePrice": 22, "discountVolume": 5, "discountPrice": 20 },
+                "Armaf Club De Nuit Woman": { "basePrice": 16, "discountVolume": 5, "discountPrice": 15 },
+                "Armaf Club de Nuit Intense Man EDT": { "basePrice": 18, "discountVolume": 5, "discountPrice": 16 },
+                "Armaf Club de Nuit Intense Man Parfum": { "basePrice": 25, "discountVolume": 5, "discountPrice": 23 },
+                "Armaf Club de Nuit Milestone": { "basePrice": 18, "discountVolume": 5, "discountPrice": 16 },
+                "Arte Olfatto Black Hashish": { "basePrice": 55, "discountVolume": 5, "discountPrice": 52 },
+                "Attar Collection Musk Kashmir": { "basePrice": 44, "discountVolume": 5, "discountPrice": 42 },
+                "Azzaro Chrome": { "basePrice": 22, "discountVolume": 10, "discountPrice": 20 },
+                "Azzaro Chrome Legend": { "basePrice": 14, "discountVolume": 10, "discountPrice": 13 },
+                "Azzaro Chrome Parfum": { "basePrice": 25, "discountVolume": 10, "discountPrice": 23 },
+                "Azzaro Forever Wanted Elixir": { "basePrice": 58, "discountVolume": 5, "discountPrice": 55 },
+                "Azzaro The Most Wanted": { "basePrice": 43, "discountVolume": 5, "discountPrice": 40 },
+                "Azzaro The Most Wanted Intense EDT": { "basePrice": 33, "discountVolume": 5, "discountPrice": 32 },
+                "Azzaro The Most Wanted Parfum": { "basePrice": 45, "discountVolume": 10, "discountPrice": 44 },
+                "Azzaro Wanted EDP": { "basePrice": 32, "discountVolume": 10, "discountPrice": 30 },
+                "Azzaro Wanted by Night": { "basePrice": 40, "discountVolume": 5, "discountPrice": 37 },
+                "Bentley Intense for Men": { "basePrice": 15, "discountVolume": 10, "discountPrice": 13 },
+                "Bois 1920 Cannabis Fruttata": { "basePrice": 58, "discountVolume": 5, "discountPrice": 55 },
+                "Bois 1920 Parana": { "basePrice": 60, "discountVolume": 5, "discountPrice": 55 },
+                "Burberry Her Elixir": { "basePrice": 50, "discountVolume": 5, "discountPrice": 49 },
+                "Burberry Hero Parfum": { "basePrice": 41, "discountVolume": 5, "discountPrice": 39 },
+                "Burberry Hero Parfum Intense": { "basePrice": 47, "discountVolume": 5, "discountPrice": 45 },
+                "Burberry London For Men": { "basePrice": 19, "discountVolume": 5, "discountPrice": 17 },
+                "Bvlgari Aqva Pour Homme": { "basePrice": 47, "discountVolume": 5, "discountPrice": 45 },
+                "Bvlgari Le Gemme Orom": { "basePrice": 155, "discountVolume": 5, "discountPrice": 150 },
+                "Bvlgari Man In Black": { "basePrice": 42, "discountVolume": 10, "discountPrice": 40 },
+                "Bvlgari Man In Black Parfum": { "basePrice": 54, "discountVolume": 5, "discountPrice": 49 },
+                "Bvlgari Man Terrae Essence": { "basePrice": 44, "discountVolume": 5, "discountPrice": 42 },
+                "Bvlgari Man Wood Neroli": { "basePrice": 40, "discountVolume": 5, "discountPrice": 35 },
+                "Bvlgari Omnia Coral": { "basePrice": 52, "discountVolume": 5, "discountPrice": 50 },
+                "Bvlgari Omnia Crystalline": { "basePrice": 52, "discountVolume": 5, "discountPrice": 48 },
+                "Bvlgari Pour Homme EDP": { "basePrice": 45, "discountVolume": 5, "discountPrice": 43 },
+                "By Kilian Angels Share": { "basePrice": 135, "discountVolume": 5, "discountPrice": 130 },
+                "By Kilian Old Fashioned": { "basePrice": 130, "discountVolume": 5, "discountPrice": 125 },
+                "Cacharel Noa": { "basePrice": 24, "discountVolume": 5, "discountPrice": 20 },
+                "Carolina Herrera 212 Men": { "basePrice": 30, "discountVolume": 5, "discountPrice": 29 },
+                "Carolina Herrera 212 NYC": { "basePrice": 38, "discountVolume": 5, "discountPrice": 36 },
+                "Carolina Herrera 212 VIP Black Elixir": { "basePrice": 50, "discountVolume": 5, "discountPrice": 48 },
+                "Carolina Herrera Bad Boy Cobalt Elixir": { "basePrice": 49, "discountVolume": 10, "discountPrice": 45 },
+                "Carolina Herrera Bad Boy Elixir": { "basePrice": 55, "discountVolume": 10, "discountPrice": 50 },
+                "Carolina Herrera Bad Boy Extreme": { "basePrice": 49, "discountVolume": 5, "discountPrice": 45 },
+                "Carolina Herrera Bad Boy Le Parfum": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Carolina Herrera CH Men Pasion": { "basePrice": 42, "discountVolume": 5, "discountPrice": 40 },
+                "Carolina Herrera CH Men Prive": { "basePrice": 55, "discountVolume": 10, "discountPrice": 50 },
+                "Carolina Herrera Chic For Men": { "basePrice": 30, "discountVolume": 5, "discountPrice": 28 },
+                "Carolina Herrera Good Girl": { "basePrice": 40, "discountVolume": 5, "discountPrice": 37 },
+                // --- Частина 2 ---
+                "Carolina Herrera Good Girl Supreme": { "basePrice": 55, "discountVolume": 5, "discountPrice": 50 },
+                "Cartier Declaration": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Cartier Declaration Haute Fraicheur": { "basePrice": 33, "discountVolume": 10, "discountPrice": 30 },
+                "Chanel Allure Homme Edition Blanche": { "basePrice": 64, "discountVolume": 5, "discountPrice": 60 },
+                "Chanel Allure Homme Sport": { "basePrice": 55, "discountVolume": 5, "discountPrice": 50 },
+                "Chanel Allure Homme Sport Cologne": { "basePrice": 55, "discountVolume": 5, "discountPrice": 50 },
+                "Chanel Bleu de Chanel": { "basePrice": 50, "discountVolume": 5, "discountPrice": 47 },
+                "Chanel Egoiste": { "basePrice": 60, "discountVolume": 5, "discountPrice": 55 },
+                "Chanel Egoiste Platinum": { "basePrice": 60, "discountVolume": 5, "discountPrice": 55 },
+                "Chloe Eau de Parfum": { "basePrice": 35, "discountVolume": 5, "discountPrice": 32 },
+                "Chopard Black Incense Malaki": { "basePrice": 30, "discountVolume": 5, "discountPrice": 28 },
+                "Chopard Cedar Malaki": { "basePrice": 39, "discountVolume": 5, "discountPrice": 36 },
+                "Dior Homme 2020": { "basePrice": 42, "discountVolume": 5, "discountPrice": 40 },
+                "Dior Homme Cologne 2022": { "basePrice": 44, "discountVolume": 10, "discountPrice": 37 },
+                "Dior Homme Intense 2011": { "basePrice": 55, "discountVolume": 5, "discountPrice": 53 },
+                "Dior Homme Parfum 2025": { "basePrice": 90, "discountVolume": 5, "discountPrice": 85 },
+                "Christian Dior Eau Sauvage Parfum": { "basePrice": 65, "discountVolume": 5, "discountPrice": 62 },
+                "Christian Dior Fahrenheit": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Christian Dior Fahrenheit Le Parfum": { "basePrice": 68, "discountVolume": 5, "discountPrice": 63 },
+                "Christian Dior Homme Sport 2021": { "basePrice": 38, "discountVolume": 5, "discountPrice": 37 },
+                "Christian Dior Hypnotic Poison": { "basePrice": 52, "discountVolume": 5, "discountPrice": 48 },
+                "Christian Dior J'Adore EDT": { "basePrice": 47, "discountVolume": 5, "discountPrice": 46 },
+                "Christian Dior J'Adore Infinissime": { "basePrice": 46, "discountVolume": 5, "discountPrice": 45 },
+                "Christian Dior Miss Dior Essence": { "basePrice": 75, "discountVolume": 5, "discountPrice": 73 },
+                "Christian Dior Miss Dior Rose N’Roses": { "basePrice": 44, "discountVolume": 5, "discountPrice": 42 },
+                "Christian Dior Sauvage 2015": { "basePrice": 39, "discountVolume": 5, "discountPrice": 35 },
+                "Christian Dior Sauvage EDP 2018": { "basePrice": 47, "discountVolume": 5, "discountPrice": 45 },
+                "Christian Dior Sauvage Elixir": { "basePrice": 99, "discountVolume": 5, "discountPrice": 95 },
+                "Clinique Happy for Men": { "basePrice": 24, "discountVolume": 10, "discountPrice": 22 },
+                "Coach Green": { "basePrice": 20, "discountVolume": 10, "discountPrice": 18 },
+                "Creed Millesime Imperial": { "basePrice": 67, "discountVolume": 5, "discountPrice": 65 },
+                "D&G L’Imperatrice": { "basePrice": 24, "discountVolume": 5, "discountPrice": 23 },
+                "D&G Light Blue Italian Love": { "basePrice": 35, "discountVolume": 5, "discountPrice": 33 },
+                "D&G Light Blue Pour Femme": { "basePrice": 27, "discountVolume": 5, "discountPrice": 25 },
+                "D&G Light Blue Summer Vibes": { "basePrice": 35, "discountVolume": 10, "discountPrice": 32 },
+                "D&G Light Blue Summer Vibes PH": { "basePrice": 29, "discountVolume": 10, "discountPrice": 28 },
+                "D&G The One EDP": { "basePrice": 42, "discountVolume": 5, "discountPrice": 40 },
+                "D&G The One for Men EDT": { "basePrice": 29, "discountVolume": 5, "discountPrice": 27 },
+                "D&G The One for Men EDP": { "basePrice": 37, "discountVolume": 5, "discountPrice": 35 },
+                "Escentric Molecules Escentric 03": { "basePrice": 38, "discountVolume": 5, "discountPrice": 36 },
+                "Escentric Molecules Escentric 04": { "basePrice": 43, "discountVolume": 5, "discountPrice": 40 },
+                "Escentric Molecules Molecule 05": { "basePrice": 35, "discountVolume": 5, "discountPrice": 30 },
+                "Essential Parfums Bois Imperial Extrait": { "basePrice": 220, "discountVolume": 5, "discountPrice": 219 },
+                "Ex Nihilo Outcast Blue Extrait": { "basePrice": 163, "discountVolume": 5, "discountPrice": 160 },
+                "Fragrance World French Avenue Liquid Brun": { "basePrice": 27, "discountVolume": 5, "discountPrice": 25 },
+                "Franck Boclet Patchouli": { "basePrice": 38, "discountVolume": 5, "discountPrice": 36 },
+                "Franck Boclet Tobacco": { "basePrice": 38, "discountVolume": 5, "discountPrice": 36 },
+                "Armani Acqua Di Gio Parfum": { "basePrice": 34, "discountVolume": 5, "discountPrice": 30 },
+                "Armani Acqua di Gio EDT": { "basePrice": 37, "discountVolume": 5, "discountPrice": 35 },
+                "Armani Acqua di Gio Absolu": { "basePrice": 40, "discountVolume": 10, "discountPrice": 39 },
+                "Armani Acqua di Gio EDP": { "basePrice": 30, "discountVolume": 5, "discountPrice": 28 },
+                "Armani Acqua di Gio Pour Homme": { "basePrice": 29, "discountVolume": 5, "discountPrice": 25 },
+                "Armani Acqua di Gio Pour Homme 2024": { "basePrice": 32, "discountVolume": 5, "discountPrice": 30 },
+                "Armani Acqua di Gio Profondo": { "basePrice": 32, "discountVolume": 10, "discountPrice": 28 },
+                "Armani Acqua di Gio Profondo Parfum": { "basePrice": 45, "discountVolume": 5, "discountPrice": 43 },
+                "Armani Acqua di Gioia": { "basePrice": 45, "discountVolume": 5, "discountPrice": 42 },
+                "Armani Acqua di Gioia Intense": { "basePrice": 48, "discountVolume": 5, "discountPrice": 45 },
+                "Armani Code Parfum": { "basePrice": 39, "discountVolume": 5, "discountPrice": 37 },
+                "Armani Eau de Nuit": { "basePrice": 43, "discountVolume": 5, "discountPrice": 42 },
+                "Armani Because It’s You": { "basePrice": 39, "discountVolume": 5, "discountPrice": 37 },
+                "Armani Stronger With You": { "basePrice": 36, "discountVolume": 5, "discountPrice": 34 },
+                "Armani Stronger With You Absolutely": { "basePrice": 43, "discountVolume": 5, "discountPrice": 40 },
+                "Armani Stronger With You Intensely": { "basePrice": 40, "discountVolume": 5, "discountPrice": 36 },
+                "Armani Stronger With You Leather": { "basePrice": 50, "discountVolume": 5, "discountPrice": 49 },
+                "Armani Stronger With You Oud": { "basePrice": 48, "discountVolume": 5, "discountPrice": 47 },
+                "Armani Stronger With You Parfum": { "basePrice": 57, "discountVolume": 5, "discountPrice": 55 },
+                "Armani Stronger With You Tobacco": { "basePrice": 42, "discountVolume": 5, "discountPrice": 39 },
+                "Armani My Way": { "basePrice": 39, "discountVolume": 5, "discountPrice": 37 },
+                "Armani My Way Parfum": { "basePrice": 50, "discountVolume": 5, "discountPrice": 48 },
+                "Armani Si": { "basePrice": 39, "discountVolume": 5, "discountPrice": 37 },
+                "Armani Si Passione Intense": { "basePrice": 45, "discountVolume": 5, "discountPrice": 44 },
+                "Givenchy Ange ou Demon": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Givenchy Ange ou Demon Le Secret": { "basePrice": 42, "discountVolume": 5, "discountPrice": 40 },
+                "Givenchy Gentleman Boisee EDP": { "basePrice": 30, "discountVolume": 5, "discountPrice": 28 },
+                "Givenchy Gentleman EDP": { "basePrice": 35, "discountVolume": 0, "discountPrice": 35 }, // Без мінімалки, discountVolume: 0
+                "Givenchy Gentleman Intense": { "basePrice": 30, "discountVolume": 5, "discountPrice": 29 },
+                "Givenchy Gentleman Original": { "basePrice": 34, "discountVolume": 5, "discountPrice": 30 },
+                "Givenchy Gentleman Reserve Privee": { "basePrice": 35, "discountVolume": 5, "discountPrice": 33 },
+                "Givenchy Gentleman Society Ambree": { "basePrice": 49, "discountVolume": 5, "discountPrice": 45 },
+                "Givenchy Gentleman Society Extreme": { "basePrice": 43, "discountVolume": 5, "discountPrice": 41 },
+                "Givenchy L’Interdit Intense": { "basePrice": 47, "discountVolume": 5, "discountPrice": 45 },
+                "Givenchy L’Interdit EDT": { "basePrice": 41, "discountVolume": 5, "discountPrice": 40 },
+                "Givenchy Pour Homme": { "basePrice": 25, "discountVolume": 5, "discountPrice": 22 },
+                "Givenchy Pour Homme Blue Label": { "basePrice": 25, "discountVolume": 5, "discountPrice": 23 },
+                "Givenchy Very Irresistible": { "basePrice": 44, "discountVolume": 5, "discountPrice": 42 },
+                "Gucci Bloom": { "basePrice": 37, "discountVolume": 5, "discountPrice": 35 },
+                // --- Частина 3 (Новий пакет) ---
+                "Gucci Bloom Profumo di Fiori": { "basePrice": 41, "discountVolume": 5, "discountPrice": 40 },
+                "Gucci Guilty Intense Pour Femme": { "basePrice": 54, "discountVolume": 5, "discountPrice": 50 },
+                "Gucci Guilty Elixir pour Homme": { "basePrice": 89, "discountVolume": 5, "discountPrice": 85 },
+                "Gucci Guilty Essence pour Homme": { "basePrice": 39, "discountVolume": 10, "discountPrice": 36 },
+                "Gucci Guilty Pour Femme Absolute": { "basePrice": 50, "discountVolume": 5, "discountPrice": 46 },
+                "Gucci Guilty Pour Femme EDT": { "basePrice": 42, "discountVolume": 5, "discountPrice": 40 },
+                "Gucci Guilty Pour Homme Absolute": { "basePrice": 29, "discountVolume": 5, "discountPrice": 27 },
+                "Gucci Intense Oud": { "basePrice": 45, "discountVolume": 5, "discountPrice": 43 },
+                "Gucci Rush": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Guerlain L’Homme Ideal": { "basePrice": 33, "discountVolume": 5, "discountPrice": 30 },
+                "Guerlain La Petite Robe Noire": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Guerlain La Petite Robe Noire Absolue": { "basePrice": 42, "discountVolume": 5, "discountPrice": 38 },
+                "Hermes H24 EDP": { "basePrice": 33, "discountVolume": 5, "discountPrice": 30 },
+                "Hermes H24 EDT": { "basePrice": 28, "discountVolume": 5, "discountPrice": 26 },
+                "Hermes H24 Herbes Vives": { "basePrice": 43, "discountVolume": 10, "discountPrice": 40 },
+                "Hermes Jour d’Hermes": { "basePrice": 48, "discountVolume": 5, "discountPrice": 44 },
+                "Hermes Jour d’Hermes Absolu": { "basePrice": 60, "discountVolume": 5, "discountPrice": 57 },
+                "Hermes Terre d’Hermes EDT": { "basePrice": 34, "discountVolume": 5, "discountPrice": 32 },
+                "Hermes Terre d’Hermes Parfum": { "basePrice": 42, "discountVolume": 5, "discountPrice": 40 },
+                "Hermes Terre d’Hermes Eau Givree": { "basePrice": 39, "discountVolume": 5, "discountPrice": 38 },
+                "Hermes Terre d’Hermes Intense Vetiver": { "basePrice": 35, "discountVolume": 5, "discountPrice": 34 },
+                "Hermes Terre d’Hermes Flacon H 2019": { "basePrice": 65, "discountVolume": 5, "discountPrice": 60 },
+                "Hermes Terre d’Hermes Intense": { "basePrice": 45, "discountVolume": 5, "discountPrice": 40 },
+                "Hermes Un Jardin sur le Nil": { "basePrice": 39, "discountVolume": 5, "discountPrice": 37 },
+                "Hermes Voyage d’Hermes Parfum": { "basePrice": 50, "discountVolume": 5, "discountPrice": 48 },
+                "Histoires de Parfums 1725 Casanova": { "basePrice": 30, "discountVolume": 5, "discountPrice": 29 },
+                "Histoires de Parfums 1740 Marquis de Sade": { "basePrice": 44, "discountVolume": 5, "discountPrice": 42 },
+                "Histoires de Parfums 1899 Hemingway": { "basePrice": 40, "discountVolume": 5, "discountPrice": 37 },
+                "Histoires de Parfums Ambre 114": { "basePrice": 40, "discountVolume": 5, "discountPrice": 37 },
+                "Hugo Boss Bottled Absolu": { "basePrice": 45, "discountVolume": 5, "discountPrice": 40 },
+                "Hugo Boss Bottled Elixir": { "basePrice": 49, "discountVolume": 5, "discountPrice": 46 },
+                "Hugo Boss Bottled Triumph Elixir": { "basePrice": 39, "discountVolume": 5, "discountPrice": 37 },
+                "Hugo Boss The Scent Elixir": { "basePrice": 43, "discountVolume": 5, "discountPrice": 39 },
+                "Hugo Boss The Scent Le Parfum": { "basePrice": 38, "discountVolume": 5, "discountPrice": 37 },
+                "Hugo Boss The Scent for Him": { "basePrice": 23, "discountVolume": 5, "discountPrice": 20 },
+                "Issey Miyake L’Eau Bleue d’Issey": { "basePrice": 32, "discountVolume": 5, "discountPrice": 28 },
+                "Issey Miyake Wood & Wood": { "basePrice": 28, "discountVolume": 5, "discountPrice": 27 },
+                "Issey Miyake Le Sel d’Issey": { "basePrice": 33, "discountVolume": 5, "discountPrice": 32 },
+                "Jean Paul Gaultier Divine Elixir": { "basePrice": 54, "discountVolume": 5, "discountPrice": 50 },
+                "Jean Paul Gaultier Le Beau": { "basePrice": 43, "discountVolume": 5, "discountPrice": 41 },
+                "Jean Paul Gaultier Le Beau Le Parfum": { "basePrice": 55, "discountVolume": 5, "discountPrice": 53 },
+                "Jean Paul Gaultier Le Beau Paradise Garden": { "basePrice": 46, "discountVolume": 5, "discountPrice": 44 },
+                "Jean Paul Gaultier Le Male": { "basePrice": 32, "discountVolume": 5, "discountPrice": 28 },
+                "Jean Paul Gaultier Le Male Elixir": { "basePrice": 45, "discountVolume": 5, "discountPrice": 39 },
+                "Jean Paul Gaultier Le Male Elixir Absolu": { "basePrice": 45, "discountVolume": 5, "discountPrice": 40 },
+                "Jean Paul Gaultier Le Male Le Parfum": { "basePrice": 39, "discountVolume": 5, "discountPrice": 36 },
+                "Jean Paul Gaultier Scandal": { "basePrice": 49, "discountVolume": 5, "discountPrice": 47 },
+                "Jean Paul Gaultier Scandal Absolu": { "basePrice": 58, "discountVolume": 5, "discountPrice": 53 },
+                "Jean Paul Gaultier Scandal Pour Homme": { "basePrice": 32, "discountVolume": 5, "discountPrice": 30 },
+                "Jean Paul Gaultier Scandal Pour Homme Absolu": { "basePrice": 49, "discountVolume": 5, "discountPrice": 45 },
+                "Jean Paul Gaultier Scandal Pour Homme Le Parfum": { "basePrice": 44, "discountVolume": 5, "discountPrice": 40 },
+                "Jean Paul Gaultier Ultra Male": { "basePrice": 37, "discountVolume": 5, "discountPrice": 34 },
+                "John Varvatos Artisan": { "basePrice": 19, "discountVolume": 5, "discountPrice": 17 },
+                "John Varvatos Artisan Pure": { "basePrice": 25, "discountVolume": 10, "discountPrice": 24 },
+                "John Varvatos For Men": { "basePrice": 20, "discountVolume": 5, "discountPrice": 19 },
+                "John Varvatos XX Artisan Teal": { "basePrice": 24, "discountVolume": 10, "discountPrice": 23 },
+                "Juliette Has A Gun Ex Vetiver": { "basePrice": 48, "discountVolume": 5, "discountPrice": 45 },
+                "Kenzo Homme 2022": { "basePrice": 35, "discountVolume": 10, "discountPrice": 29 },
+                "Kenzo Santal Marin": { "basePrice": 36, "discountVolume": 5, "discountPrice": 35 },
+                "Kenzo L’Eau Kenzo pour Homme": { "basePrice": 24, "discountVolume": 5, "discountPrice": 21 },
+                "Lacoste Pour Femme": { "basePrice": 30, "discountVolume": 5, "discountPrice": 26 },
+                "Lalique Encre Indigo": { "basePrice": 24, "discountVolume": 5, "discountPrice": 21 },
+                "Lalique Encre Noire": { "basePrice": 14, "discountVolume": 10, "discountPrice": 12 },
+                "Lalique Encre Noire Sport": { "basePrice": 14, "discountVolume": 10, "discountPrice": 13 },
+                "Lalique Encre Noire à L’Extreme": { "basePrice": 16, "discountVolume": 10, "discountPrice": 14 },
+                "Lalique Ombre Noire": { "basePrice": 37, "discountVolume": 5, "discountPrice": 34 },
+                "Lancome La Vie Est Belle": { "basePrice": 38, "discountVolume": 5, "discountPrice": 35 },
+                "Lancome La Vie Est Belle L’Elixir": { "basePrice": 49, "discountVolume": 5, "discountPrice": 46 },
+                "Lancome Miracle": { "basePrice": 42, "discountVolume": 5, "discountPrice": 40 },
+                "Lancome Tresor": { "basePrice": 39, "discountVolume": 5, "discountPrice": 37 },
+                "Lattafa Asad": { "basePrice": 15, "discountVolume": 10, "discountPrice": 14 },
+                "Lattafa Asad Bourbon": { "basePrice": 20, "discountVolume": 5, "discountPrice": 18 },
+                "Lattafa Asad Zanzibar": { "basePrice": 14, "discountVolume": 10, "discountPrice": 13 },
+                "Lattafa Badee Al Oud Oud for Glory": { "basePrice": 16, "discountVolume": 10, "discountPrice": 15 },
+                "Lattafa Fakhar Extrait": { "basePrice": 18, "discountVolume": 5, "discountPrice": 17 },
+                "Lattafa Fakhar Platin": { "basePrice": 25, "discountVolume": 5, "discountPrice": 22 },
+                "Lattafa Fakhar for Men": { "basePrice": 18, "discountVolume": 10, "discountPrice": 17 },
+                "Lattafa Khamrah": { "basePrice": 22, "discountVolume": 5, "discountPrice": 20 },
+                "Lattafa Khamrah Dukhan": { "basePrice": 25, "discountVolume": 5, "discountPrice": 24 },
+                "Lattafa Khamrah Qahwa": { "basePrice": 20, "discountVolume": 10, "discountPrice": 17 },
+                "Lattafa Musamam White Intense": { "basePrice": 28, "discountVolume": 5, "discountPrice": 25 },
+                "Lattafa Pride Masa": { "basePrice": 22, "discountVolume": 5, "discountPrice": 20 },
+                "Lattafa Pride Vintage Radio": { "basePrice": 20, "discountVolume": 10, "discountPrice": 16 },
+                "Lattafa Yara": { "basePrice": 15, "discountVolume": 5, "discountPrice": 13 },
+                "Lattafa Yara Candy": { "basePrice": 20, "discountVolume": 5, "discountPrice": 17 },
+                "Lattafa Yara Tous": { "basePrice": 16, "discountVolume": 5, "discountPrice": 15 },
+                "Loewe Solo Loewe": { "basePrice": 45, "discountVolume": 10, "discountPrice": 40 },
+                "Maison Margiela Replica Autumn Vibes": { "basePrice": 55, "discountVolume": 5, "discountPrice": 52 },
+                "Maison Margiela Replica Beach Walk": { "basePrice": 45, "discountVolume": 5, "discountPrice": 43 },
+                "Maison Margiela Replica By the Fireplace": { "basePrice": 55, "discountVolume": 5, "discountPrice": 50 },
+                "Maison Margiela Replica Flying": { "basePrice": 50, "discountVolume": 5, "discountPrice": 45 },
+                "Maison Margiela Replica Jazz Club": { "basePrice": 51, "discountVolume": 5, "discountPrice": 49 },
+                "Maison Margiela Replica On A Date": { "basePrice": 55, "discountVolume": 5, "discountPrice": 50 },
+                "Maison Margiela Replica Under the Stars": { "basePrice": 54, "discountVolume": 5, "discountPrice": 50 },
+                "Mancera Amore Caffe": { "basePrice": 39, "discountVolume": 5, "discountPrice": 36 },
+                // --- Частина 4 (Новий пакет: Mancera - Prada) V8.11 ---
+                "Mancera Cedrat Boise EDP": { "basePrice": 34, "discountVolume": 5, "discountPrice": 32 },
+                "Mancera Cedrat Boise Intense Parfum": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Mancera Cosmic Pepper EDP": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Mancera Eternal Wood EDP": { "basePrice": 39, "discountVolume": 5, "discountPrice": 36 },
+                "Mancera Red Tobacco EDP": { "basePrice": 38, "discountVolume": 5, "discountPrice": 36 },
+                "Mancera Red Tobacco Intense EDP": { "basePrice": 45, "discountVolume": 5, "discountPrice": 40 },
+                "Mancera Roses Vanille EDP": { "basePrice": 32, "discountVolume": 5, "discountPrice": 29 },
+                "Mancera Tonka Cola EDP": { "basePrice": 39, "discountVolume": 5, "discountPrice": 35 },
+                "Mercedes-Benz Man Private EDP": { "basePrice": 30, "discountVolume": 5, "discountPrice": 29 },
+                "Missoni Parfum Pour Homme EDP": { "basePrice": 20, "discountVolume": 5, "discountPrice": 18 },
+                "Missoni Wave EDT": { "basePrice": 25, "discountVolume": 5, "discountPrice": 24 },
+                "Montale Arabians Tonka EDP": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Montale Intense Cafe EDP": { "basePrice": 35, "discountVolume": 5, "discountPrice": 34 },
+                "Montale Red Vetiver EDP": { "basePrice": 37, "discountVolume": 5, "discountPrice": 36 },
+                "Montblanc Explorer EDP": { "basePrice": 23, "discountVolume": 5, "discountPrice": 20 },
+                "Montblanc Explorer Extreme Parfum": { "basePrice": 40, "discountVolume": 5, "discountPrice": 36 },
+                "Montblanc Explorer Platinum EDP": { "basePrice": 22, "discountVolume": 5, "discountPrice": 19 },
+                "Moschino Toy 2 EDT": { "basePrice": 27, "discountVolume": 5, "discountPrice": 24 },
+                "Moschino Toy 2 Bubble Gum EDT": { "basePrice": 26, "discountVolume": 5, "discountPrice": 25 },
+                "Moschino Toy 2 Pearl EDP": { "basePrice": 35, "discountVolume": 5, "discountPrice": 30 },
+                "Moschino Toy Boy EDP": { "basePrice": 28, "discountVolume": 5, "discountPrice": 26 },
+                "Nasomatto Black Afgano Parfum": { "basePrice": 210, "discountVolume": 5, "discountPrice": 205 },
+                "Nautica Voyage EDT": { "basePrice": 13, "discountVolume": 10, "discountPrice": 12 }, 
+                "Nina Ricci Nina EDT": { "basePrice": 33, "discountVolume": 5, "discountPrice": 30 },
+                "Nishane Hacivat X": { "basePrice": 83, "discountVolume": 5, "discountPrice": 80 },
+                "Novellista Unique Wood EDP": { "basePrice": 40, "discountVolume": 5, "discountPrice": 38 },
+                "Novellista Vanilla Club EDP": { "basePrice": 43, "discountVolume": 5, "discountPrice": 41 },
+                "Olfactive Studio Autoportrait EDP": { "basePrice": 39, "discountVolume": 10, "discountPrice": 37 }, 
+                "Orlov Paris Good Vibes EDP": { "basePrice": 62, "discountVolume": 5, "discountPrice": 60 },
+                "Orto Parisi Bergamask Parfum": { "basePrice": 149, "discountVolume": 5, "discountPrice": 140 },
+                "Paco Rabanne 1 Million EDT": { "basePrice": 30, "discountVolume": 5, "discountPrice": 27 },
+                "Paco Rabanne 1 Million Elixir Parfum": { "basePrice": 45, "discountVolume": 5, "discountPrice": 44 },
+                "Paco Rabanne 1 Million Parfum": { "basePrice": 38, "discountVolume": 5, "discountPrice": 35 },
+                "Paco Rabanne Invictus Parfum": { "basePrice": 48, "discountVolume": 10, "discountPrice": 45 }, 
+                "Paco Rabanne Invictus Victory EDP": { "basePrice": 34, "discountVolume": 5, "discountPrice": 32 },
+                "Paco Rabanne Invictus Victory Absolu Parfum": { "basePrice": 50, "discountVolume": 5, "discountPrice": 47 },
+                "Paco Rabanne Lady Million EDP": { "basePrice": 45, "discountVolume": 5, "discountPrice": 43 },
+                "Paco Rabanne Lady Million Empire EDP": { "basePrice": 40, "discountVolume": 5, "discountPrice": 39 },
+                "Paco Rabanne Million Gold EDP (102/200)": { "basePrice": 43, "discountVolume": 5, "discountPrice": 39 },
+                "Paco Rabanne Million Gold EDP (67/200)": { "basePrice": 45, "discountVolume": 5, "discountPrice": 39 },
+                "Paco Rabanne Million Gold Elixir Parfum": { "basePrice": 55, "discountVolume": 10, "discountPrice": 50 }, 
+                "Paco Rabanne Olympea EDP": { "basePrice": 45, "discountVolume": 5, "discountPrice": 40 },
+                "Paco Rabanne Phantom EDT": { "basePrice": 33, "discountVolume": 5, "discountPrice": 29 },
+                "Perry Ellis 360° Red for Men EDT": { "basePrice": 17, "discountVolume": 5, "discountPrice": 16 },
+                "Philipp Plein No Limit$ EDP": { "basePrice": 24, "discountVolume": 5, "discountPrice": 22 },
+                "Philipp Plein No Limits Gold EDP": { "basePrice": 25, "discountVolume": 5, "discountPrice": 24 },
+                "Prada L’Homme EDT": { "basePrice": 43, "discountVolume": 5, "discountPrice": 40 },
+                "Prada Luna Rossa EDT": { "basePrice": 37, "discountVolume": 5, "discountPrice": 35 },
+                "Prada Luna Rossa Black EDP": { "basePrice": 46, "discountVolume": 5, "discountPrice": 44 },
+                "Prada Luna Rossa Carbon EDT": { "basePrice": 42, "discountVolume": 5, "discountPrice": 40 },
+                "Prada Luna Rossa Ocean EDT": { "basePrice": 43, "discountVolume": 5, "discountPrice": 40 },
+                "Prada Luna Rossa Ocean Le Parfum": { "basePrice": 50, "discountVolume": 10, "discountPrice": 48 }, 
+                "Prada Luna Rossa Sport EDT": { "basePrice": 37, "discountVolume": 5, "discountPrice": 35 },
+// ===================================================================
+// ================== ОНОВЛЕННЯ ПРАЙСУ ВІД КОРИСТУВАЧА ================
+// ===================================================================
+"Ralph Lauren Ralp’s Club Elixir": {basePrice: 50, discountVolume: 5, discountPrice: 48},
+"Rasasi Entebaa pour Homme": {basePrice: 20, discountVolume: 5, discountPrice: 17},
+"Rasasi Fattan Pour Homme": {basePrice: 20, discountVolume: 5, discountPrice: 19},
+"Rasasi La Yuqawam Pour Homme": {basePrice: 45, discountVolume: 5, discountPrice: 43},
+"Rasasi Qasamat Bareeq": {basePrice: 30, discountVolume: 5, discountPrice: 29},
+"Rasasi Rumz Al Rasasi 9325 Pour Lui": {basePrice: 30, discountVolume: 10, discountPrice: 25},
+"Rasasi Rumz Al Rasasi 9453 Pour Lui": {basePrice: 36, discountVolume: 5, discountPrice: 35},
+"Rasasi Tobacco Blaze": {basePrice: 44, discountVolume: 10, discountPrice: 40},
+"Reyane Tradition Insurrection II Wild": {basePrice: 25, discountVolume: 0, discountPrice: 25}, // Без знижки
+"Rochas Man Intense": {basePrice: 17, discountVolume: 5, discountPrice: 16},
+"Rochas Moustache Eau de Parfum": {basePrice: 19, discountVolume: 5, discountPrice: 17},
+"Salvatore Ferragamo Uomo Signature": {basePrice: 25, discountVolume: 5, discountPrice: 24},
+"Serge Lutens Ambre Sultan": {basePrice: 50, discountVolume: 5, discountPrice: 45},
+"Serge Lutens Chergui": {basePrice: 59, discountVolume: 5, discountPrice: 53},
+"Shiseido Zen 2007": {basePrice: 35, discountVolume: 5, discountPrice: 33},
+"Swiss Arabian Intense Pride": {basePrice: 25, discountVolume: 10, discountPrice: 23},
+"Thierry Mugler AMen": {basePrice: 42, discountVolume: 5, discountPrice: 40},
+"Thierry Mugler AMen Fantasm": {basePrice: 40, discountVolume: 5, discountPrice: 35},
+"Thierry Mugler Alien Goddess": {basePrice: 49, discountVolume: 5, discountPrice: 45},
+"Thierry Mugler Angel EDT 2019": {basePrice: 44, discountVolume: 5, discountPrice: 40},
+"Thierry Mugler Angel Stellar": {basePrice: 54, discountVolume: 5, discountPrice: 50},
+"Tiziana Terenzi Kirke": {basePrice: 48, discountVolume: 5, discountPrice: 46},
+"Tiziana Terenzi Kirke Overdose": {basePrice: 95, discountVolume: 5, discountPrice: 92},
+"Tom Ford Eau d’Ombre Leather": {basePrice: 74, discountVolume: 5, discountPrice: 68},
+"Tom Ford Ombre Leather (2018)": {basePrice: 74, discountVolume: 5, discountPrice: 70},
+"Tom Ford Oud Minerale 2023": {basePrice: 60, discountVolume: 5, discountPrice: 56},
+"Trussardi Donna 2011": {basePrice: 23, discountVolume: 5, discountPrice: 21},
+"Trussardi Donna EDT": {basePrice: 23, discountVolume: 5, discountPrice: 20},
+"Trussardi My Land": {basePrice: 25, discountVolume: 5, discountPrice: 22},
+"Valentino Uomo Born In Roma Intense": {basePrice: 60, discountVolume: 10, discountPrice: 55},
+"Valentino Uomo Born in Roma": {basePrice: 48, discountVolume: 5, discountPrice: 46},
+"Valentino Donna": {basePrice: 49, discountVolume: 5, discountPrice: 45},
+"Valentino Uomo": {basePrice: 43, discountVolume: 5, discountPrice: 42},
+"Valentino Uomo Acqua": {basePrice: 35, discountVolume: 5, discountPrice: 34},
+"Valentino Uomo Intense": {basePrice: 59, discountVolume: 5, discountPrice: 55},
+"Versace Bright Crystal": {basePrice: 25, discountVolume: 5, discountPrice: 23},
+"Versace Bright Crystal Absolu": {basePrice: 29, discountVolume: 5, discountPrice: 27},
+"Versace Bright Crystal Parfum": {basePrice: 42, discountVolume: 5, discountPrice: 39},
+"Versace Crystal Noir": {basePrice: 33, discountVolume: 5, discountPrice: 30},
+"Versace Crystal Noir Parfum": {basePrice: 52, discountVolume: 5, discountPrice: 48},
+"Versace Eros": {basePrice: 23, discountVolume: 5, discountPrice: 20},
+"Versace Eros EDP": {basePrice: 28, discountVolume: 5, discountPrice: 26},
+"Versace Eros Energy": {basePrice: 40, discountVolume: 5, discountPrice: 38},
+"Versace Eros Flame": {basePrice: 29, discountVolume: 5, discountPrice: 25},
+"Versace Eros Najim": {basePrice: 50, discountVolume: 10, discountPrice: 48},
+"Versace Eros Parfum": {basePrice: 40, discountVolume: 5, discountPrice: 37},
+"Versace Eros Pour Femme": {basePrice: 32, discountVolume: 5, discountPrice: 30},
+"Versace Eros Pour Femme EDT": {basePrice: 25, discountVolume: 5, discountPrice: 23},
+"Versace Man Eau Fraiche": {basePrice: 24, discountVolume: 5, discountPrice: 20},
+"Versace Pour Homme": {basePrice: 24, discountVolume: 5, discountPrice: 22},
+"Versace Pour Homme Oud Noir": {basePrice: 38, discountVolume: 5, discountPrice: 36},
+"Versace Versense": {basePrice: 30, discountVolume: 5, discountPrice: 29},
+"Versace Yellow Diamond": {basePrice: 27, discountVolume: 5, discountPrice: 24},
+"Viktor & Rolf Flowerbomb": {basePrice: 40, discountVolume: 5, discountPrice: 39},
+"Viktor & Rolf Good Fortune": {basePrice: 28, discountVolume: 5, discountPrice: 26},
+"Viktor & Rolf Spicebomb": {basePrice: 39, discountVolume: 5, discountPrice: 38},
+"Viktor & Rolf Spicebomb Dark Leather": {basePrice: 38, discountVolume: 5, discountPrice: 35},
+"Viktor & Rolf Spicebomb Extreme": {basePrice: 45, discountVolume: 5, discountPrice: 43},
+"Viktor & Rolf Spicebomb Infrared": {basePrice: 43, discountVolume: 5, discountPrice: 41},
+"Viktor & Rolf Spicebomb Night Vision": {basePrice: 38, discountVolume: 5, discountPrice: 36},
+"Xerjoff Sospiro Afgano Puro": {basePrice: 75, discountVolume: 5, discountPrice: 73},
+"YSL Black Opium": {basePrice: 45, discountVolume: 5, discountPrice: 43},
+"YSL Black Opium Le Parfum": {basePrice: 55, discountVolume: 5, discountPrice: 50},
+"YSL La Nuit de L’Homme": {basePrice: 35, discountVolume: 5, discountPrice: 33},
+"YSL La Nuit de L’Homme EDP": {basePrice: 42, discountVolume: 10, discountPrice: 39},
+"YSL Libre": {basePrice: 37, discountVolume: 5, discountPrice: 36},
+"YSL MYSLF": {basePrice: 39, discountVolume: 5, discountPrice: 36},
+"YSL MYSLF Le Parfum": {basePrice: 49, discountVolume: 5, discountPrice: 48},
+"YSL Y L’Elixir": {basePrice: 60, discountVolume: 5, discountPrice: 56},
+"YSL Y Le Parfum": {basePrice: 47, discountVolume: 5, discountPrice: 45},
+"YSL Y EDP": {basePrice: 40, discountVolume: 5, discountPrice: 38},
+"YSL Y EDP Intense": {basePrice: 47, discountVolume: 5, discountPrice: 45},
+"Zadig & Voltaire Just Rock! for Him": {basePrice: 40, discountVolume: 0, discountPrice: 40}, // Без знижки
+"Zadig & Voltaire This Is Really Her!": {basePrice: 33, discountVolume: 5, discountPrice: 30},
+"Zadig & Voltaire This Is Her!": {basePrice: 38, discountVolume: 5, discountPrice: 37},
+"Zadig & Voltaire This Is Her! Vibes of Freedom": {basePrice: 39, discountVolume: 5, discountPrice: 35},
+"Zadig & Voltaire This Is Him!": {basePrice: 29, discountVolume: 5, discountPrice: 26},
+"Zarkoperfume Pink Molecule": {basePrice: 39, discountVolume: 5, discountPrice: 37},
+"Afnan 9pm Elixir": {basePrice: 30, discountVolume: 10, discountPrice: 28},
+"Afnan Rare Reef": {basePrice: 25, discountVolume: 5, discountPrice: 20},
+"Ard Al Zaafaran Saheb Intense": {basePrice: 28, discountVolume: 5, discountPrice: 27},
+"Gucci Guilty Elixir de Parfum pour Femme": {basePrice: 75, discountVolume: 5, discountPrice: 69},
+// ===================================================================
+// =================== КІНЕЦЬ НОВИХ ПАРФУМІВ =========================
+// ===================================================================
         };
-        
-        // --- LOCAL STORAGE HELPERS ---
-        function loadPerfumePrices() {
-            PERFUME_PRICES = JSON.parse(localStorage.getItem(CONFIG_KEYS.PRICES) || JSON.stringify(INITIAL_PRICES));
-        }
-        function loadFlaconData() {
-            FLACON_COSTS = JSON.parse(localStorage.getItem(CONFIG_KEYS.FLACONS) || JSON.stringify(FLACON_COSTS));
-            FLACON_VOLUMES = JSON.parse(localStorage.getItem(CONFIG_KEYS.VOLUMES) || JSON.stringify(FLACON_VOLUMES));
-        }
-        function loadMarkupPresets() {
-            MARKUP_PRESETS = JSON.parse(localStorage.getItem(CONFIG_KEYS.MARKUPS) || JSON.stringify(MARKUP_PRESETS));
-        }
-        function loadSalesSources() {
-            SALES_SOURCES = JSON.parse(localStorage.getItem(CONFIG_KEYS.SOURCES) || JSON.stringify(SALES_SOURCES));
-        }
-        function loadInventory() {
-            PERFUME_STOCK = JSON.parse(localStorage.getItem(CONFIG_KEYS.INVENTORY) || '{}');
-            Object.keys(PERFUME_PRICES).forEach(name => {
-                if(PERFUME_STOCK[name] === undefined) PERFUME_STOCK[name] = 0;
-            });
-            Object.keys(PERFUME_STOCK).forEach(name => {
-                if(PERFUME_PRICES[name] === undefined) delete PERFUME_STOCK[name]; 
-            });
-            saveInventory();
-        }
-        function saveInventory() {
-            localStorage.setItem(CONFIG_KEYS.INVENTORY, JSON.stringify(PERFUME_STOCK));
-        }
-        
-        // TASK FUNCTIONS (UPDATED SIGNATURE)
-        function getTasks() {
-            return JSON.parse(localStorage.getItem(CONFIG_KEYS.TASKS) || '[]');
-        }
-        function saveTasks(tasks) {
-            localStorage.setItem(CONFIG_KEYS.TASKS, JSON.stringify(tasks));
-        }
 
-        /**
-         * Creates a new task with full shipping details.
-         */
-        function addTask(description, type, relatedId, clientName, phone, city, postOffice, fullName, comments) {
-            const tasks = getTasks();
-            tasks.push({
-                id: Date.now() + Math.random(),
-                timestamp: Date.now(),
-                description: description,
-                type: type, 
-                relatedId: relatedId,
-                clientName: clientName,
-                isCompleted: false,
-                // NEW FIELDS
-                phone: phone || '---',
-                city: city || '---',
-                postOffice: postOffice || '---',
-                fullName: fullName || clientName || '---',
-                comments: comments || '---'
-            });
-            saveTasks(tasks);
-            showToast("✅ Нове завдання створено!", "success");
+        // --- CORE FUNCTIONS (LOAD/SAVE) ---
+        function loadPerfumePrices() { PERFUME_PRICES = JSON.parse(localStorage.getItem(CONFIG_KEYS.PRICES)) || INITIAL_PRICES; }
+        function loadFlaconData() { 
+            FLACON_VOLUMES = JSON.parse(localStorage.getItem(CONFIG_KEYS.VOLUMES)) || FLACON_VOLUMES;
+            FLACON_COSTS = JSON.parse(localStorage.getItem(CONFIG_KEYS.FLACONS)) || FLACON_COSTS;
         }
-        // END TASK FUNCTIONS
-
-        function getTransactions() {
-            return JSON.parse(localStorage.getItem(CONFIG_KEYS.TRANSACTIONS) || '[]');
-        }
-        function saveTransactions(txs) {
-            localStorage.setItem(CONFIG_KEYS.TRANSACTIONS, JSON.stringify(txs));
-        }
-        function getExpenses() {
-            return JSON.parse(localStorage.getItem(CONFIG_KEYS.EXPENSES) || '[]');
-        }
-        function saveExpenses(exps) {
-            localStorage.setItem(CONFIG_KEYS.EXPENSES, JSON.stringify(exps));
-        }
-
-        // --- CORE LOGIC: COST & PROFIT CALCULATION ---
-        function calculateCost(perfumeName, quantityML, markupTier) {
-            const pData = PERFUME_PRICES[perfumeName];
-            const flaconCost = FLACON_COSTS[quantityML];
-            const markup = MARKUP_PRESETS[markupTier];
-
-            if (!pData || isNaN(flaconCost) || isNaN(markup)) return null;
-
-            // 1. Собівартість (Cost Price)
-            const pricePerML = (quantityML >= pData.discountVolume) ? pData.discountPrice : pData.basePrice;
-            const costPerfume = pricePerML * quantityML;
-            const costTotal = costPerfume + flaconCost;
-
-            // 2. Ціна для клієнта (Revenue)
-            const retailPricePerML = pData.basePrice * (1 + markup); 
-            const revenuePerfume = retailPricePerML * quantityML;
-            const revenue = revenuePerfume + flaconCost;
-
-            // 3. Прибуток (Profit)
-            const profit = revenue - costTotal;
-
-            return {
-                costTotal: parseFloat(costTotal.toFixed(2)),
-                revenue: parseFloat(revenue.toFixed(2)),
-                profit: parseFloat(profit.toFixed(2))
-            };
-        }
+        function loadMarkupPresets() { MARKUP_PRESETS = JSON.parse(localStorage.getItem(CONFIG_KEYS.MARKUPS)) || MARKUP_PRESETS; }
+        function loadSalesSources() { SALES_SOURCES = JSON.parse(localStorage.getItem(CONFIG_KEYS.SOURCES)) || SALES_SOURCES; }
+        function getTransactions() { return JSON.parse(localStorage.getItem(CONFIG_KEYS.TRANSACTIONS)) || []; }
+        function saveTransactions(txs) { localStorage.setItem(CONFIG_KEYS.TRANSACTIONS, JSON.stringify(txs)); }
+        function getExpenses() { return JSON.parse(localStorage.getItem(CONFIG_KEYS.EXPENSES)) || []; }
+        function saveExpenses(exps) { localStorage.setItem(CONFIG_KEYS.EXPENSES, JSON.stringify(exps)); }
 
         // --- UI HELPERS ---
-        function showToast(message, type = 'primary') {
+        function showToast(message, type = 'default') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
-            const iconClass = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-times-circle' : 'fa-info-circle';
-            toast.innerHTML = `<i class="fa-solid ${iconClass}"></i> ${message}`;
+            toast.innerHTML = `<i class="fa-solid fa-bell"></i> <span>${message}</span>`;
             container.appendChild(toast);
             setTimeout(() => {
                 toast.remove();
@@ -793,33 +1044,35 @@
         }
 
         window.showSection = function(sectionId, element) {
-            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
+            document.querySelectorAll('.content-section').forEach(s => s.style.display = 'none');
+            document.getElementById(sectionId).style.display = 'block';
 
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             if(element) element.classList.add('active');
-            
-            // Re-render necessary components on section change
-            if(sectionId === 'transactions') renderTransactionHistory();
-            if(sectionId === 'admin-panel') { renderPerfumeList(); renderInventoryList(); } 
-            if(sectionId === 'expenses') renderExpenseList(); 
-            if(sectionId === 'dashboard') updateDashboard(); 
-            if(sectionId === 'tasks') renderTasks();
+
+            if (sectionId === 'transactions') renderTransactionHistory();
+            if(sectionId === 'admin-panel') { renderPerfumeList(); }
+            if(sectionId === 'expenses') renderExpenseList();
+            if (sectionId === 'crm-management') renderClientList(); // Додано виклик
+            if (sectionId === 'analytics-dashboard') renderAnalyticsCharts(); // Додано виклик
         }
 
-        // --- FORM HELPERS ---
-        function populateFormOptions() {
+        // --- FORM HELPERS (UPDATED for CRM) ---
+        window.populateFormOptions = function() {
+            const perfumePrices = PERFUME_PRICES;
+            const flaconData = FLACON_COSTS;
+            const salesSources = SALES_SOURCES;
+
             // Volumes
-            const volSelects = ['flaconVolume', 'orderFlaconVolume', 'calcFlaconVolume'];
+            const volSelects = ['flaconVolume', 'orderFlaconVolume', 'calcFlaconVolume', 'adminFlaconVolume'];
             volSelects.forEach(id => {
                 const el = document.getElementById(id);
                 if(el) {
                     el.innerHTML = '<option value="" disabled selected>Об\'єм</option>';
-                    const sortedVolumes = [...FLACON_VOLUMES].sort((a,b) => a-b);
-                    sortedVolumes.forEach(v => {
+                    FLACON_VOLUMES.sort((a,b) => a-b).forEach(v => {
                         const opt = document.createElement('option');
                         opt.value = v;
-                        opt.text = `${v} мл (${FLACON_COSTS[v] || 0} грн)`;
+                        opt.text = `${v} мл (${flaconData[v] || 0} грн)`;
                         el.appendChild(opt);
                     });
                 }
@@ -855,124 +1108,88 @@
                 }
             });
 
-            // Datalists
+            // Datalists: PERFUMES (FIXED)
             const pList = document.getElementById('perfumeList');
-            pList.innerHTML = '';
-            Object.keys(PERFUME_PRICES).sort().forEach(n => {
-                const opt = document.createElement('option');
-                opt.value = n;
-                pList.appendChild(opt);
-            });
+            if (pList) {
+                pList.innerHTML = '';
+                Object.keys(perfumePrices).sort().forEach(n => {
+                    const opt = document.createElement('option');
+                    opt.value = n;
+                    pList.appendChild(opt);
+                });
+            }
 
+            // Datalists: CLIENTS (FIXED)
             const cList = document.getElementById('clientList');
-            cList.innerHTML = '';
-            const clients = new Set(getTransactions().map(t => t.clientName).filter(n => n && n !== '---'));
-            clients.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c;
-                cList.appendChild(opt);
-            });
+            if (cList) {
+                cList.innerHTML = '';
+                const clientsFromHistory = new Set(getTransactions().map(t => t.clientName).filter(n => n && n !== '---'));
+                const clientsFromCRM = Object.keys(getClients());
+                const allClients = new Set([...clientsFromHistory, ...clientsFromCRM]);
+
+                Array.from(allClients).sort().forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    cList.appendChild(opt);
+                });
+            }
+        }
+        
+        // --- CALCULATION LOGIC ---
+        function calculateCost(perfumeName, quantityML, markupTier) {
+            const pData = PERFUME_PRICES[perfumeName];
+            const flaconCost = FLACON_COSTS[quantityML];
+            const markup = MARKUP_PRESETS[markupTier];
+
+            if (!pData || isNaN(flaconCost) || isNaN(markup)) return null;
+
+            // Визначаємо С/С за мл
+            let costPerML = pData.basePrice;
+            if (quantityML >= pData.discountVolume && pData.discountVolume > 0) {
+                costPerML = pData.discountPrice;
+            }
+
+            // Розрахунок собівартості
+            const costPerfume = costPerML * quantityML;
+            const costTotal = costPerfume + flaconCost;
+
+            // Розрахунок ціни для клієнта
+            const retailPricePerML = pData.basePrice * (1 + markup); // Роздрібна ціна базується на basePrice
+            const revenuePerfume = retailPricePerML * quantityML;
+            const revenueTotal = revenuePerfume + flaconCost;
+
+            // Прибуток
+            const profit = revenueTotal - costTotal;
+
+            return {
+                costPerML: costPerML,
+                costFlacon: flaconCost,
+                costPerfume: costPerfume,
+                costTotal: parseFloat(costTotal.toFixed(2)),
+                revenue: parseFloat(revenueTotal.toFixed(2)),
+                profit: parseFloat(profit.toFixed(2))
+            };
         }
 
-        // --- DASHBOARD UPDATE ---
         window.updateDashboard = function() {
             const today = new Date().toISOString().split('T')[0];
-            const txs = getTransactions().filter(t => new Date(t.timestamp).toISOString().split('T')[0] === today);
+            const transactions = getTransactions();
             
-            const revenue = txs.reduce((sum, t) => sum + (parseFloat(t.revenue) || 0), 0).toFixed(2);
-            const profit = txs.reduce((sum, t) => sum + (parseFloat(t.profit) || 0), 0).toFixed(2);
-            
-            const lowStockCount = Object.keys(PERFUME_STOCK).filter(name => PERFUME_STOCK[name] < LOW_STOCK_THRESHOLD && PERFUME_STOCK[name] >= 0).length;
+            const todayStats = transactions.filter(t => new Date(t.timestamp).toISOString().split('T')[0] === today)
+                .reduce((acc, t) => {
+                    acc.revenue += t.revenue;
+                    acc.profit += t.profit;
+                    acc.count += 1;
+                    return acc;
+                }, { revenue: 0, profit: 0, count: 0 });
 
-            document.getElementById('dash-revenue').textContent = `${revenue} ₴`;
-            document.getElementById('dash-profit').textContent = `${profit} ₴`;
-            document.getElementById('dash-count').textContent = txs.length;
-            document.getElementById('dash-low-stock-count-value').textContent = lowStockCount;
-            document.getElementById('dash-low-stock-count').classList.toggle('danger', lowStockCount > 0);
-        }
-        
-        // --- TASKS LOGIC (UPDATED) ---
-        
-        window.renderTasks = function() {
-            const container = document.getElementById('tasks-list-container'); 
-            container.innerHTML = '';
-            
-            // Sort: Pending first, then by date
-            let tasks = getTasks().sort((a, b) => {
-                if (a.isCompleted !== b.isCompleted) {
-                    return a.isCompleted ? 1 : -1; // Pending first (false is 0, true is 1)
-                }
-                return b.timestamp - a.timestamp;
-            });
-
-            tasks.forEach(t => {
-                const itemClass = t.isCompleted ? 'task-item completed' : 'task-item';
-                const actionBtn = t.isCompleted
-                    ? `<button class="btn-sm btn-danger" onclick="deleteTask(${t.id})">🗑️ Видалити</button>`
-                    : `<button class="btn-sm btn-success" onclick="completeTask(${t.id})">✅ Виконано</button>`;
-                    
-                const statusText = t.isCompleted ? '✅ Виконано' : '⚠️ В роботі';
-                    
-                const commentHtml = t.comments && t.comments !== '---'
-                    ? `<div class="task-comment"><i class="fa-solid fa-comment-dots"></i> Коментар: ${t.comments}</div>`
-                    : '';
-
-                container.innerHTML += `
-                    <div class="${itemClass}">
-                        <div class="task-header">
-                            <span class="task-title">${t.clientName || '---'} (${t.type === 'sale' ? 'Швидкий продаж' : 'Замовлення'})</span>
-                            <span style="font-size: 0.8rem; color: #6B7280;">Створено: ${new Date(t.timestamp).toLocaleDateString()}</span>
-                        </div>
-                        
-                        <div class="task-details">
-                            <p style="font-style: italic; margin: 5px 0 10px 0;">${t.description}</p>
-                            
-                            <p style="margin: 0;">
-                                <strong>ПІБ:</strong> ${t.fullName}<br>
-                                <strong>Телефон:</strong> ${t.phone}<br>
-                                <strong>Місто:</strong> ${t.city}<br>
-                                <strong>Відділення НП:</strong> ${t.postOffice}
-                            </p>
-                            
-                            ${commentHtml}
-
-                            <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-                                <span style="font-weight: 600; color: ${t.isCompleted ? 'var(--secondary)' : 'var(--danger)'}">${statusText}</span>
-                                ${actionBtn}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-
-            if (tasks.length === 0) {
-                 container.innerHTML = '<p style="text-align: center; color: #6B7280;">У вас немає активних завдань. Чудова робота!</p>';
-            }
+            document.getElementById('dash-revenue').textContent = `${todayStats.revenue.toFixed(2)} ₴`;
+            document.getElementById('dash-profit').textContent = `${todayStats.profit.toFixed(2)} ₴`;
+            document.getElementById('dash-count').textContent = todayStats.count;
         }
 
-        window.completeTask = function(id) {
-            const tasks = getTasks();
-            const task = tasks.find(t => t.id === id);
-            if (task) {
-                task.isCompleted = true;
-                saveTasks(tasks);
-                renderTasks();
-                showToast("Завдання виконано!", "success");
-            }
-        }
 
-        window.deleteTask = function(id) {
-            if(confirm("Видалити завдання?")) {
-                const tasks = getTasks().filter(t => t.id !== id);
-                saveTasks(tasks);
-                renderTasks();
-                showToast("Завдання видалено.", "error");
-            }
-        }
-        // --- END TASKS LOGIC ---
-
-
-        // --- ACTIONS: SALE (Single) (UPDATED) ---
+        // --- ACTIONS: SALE ---
         window.addSale = function() {
             const name = document.getElementById('perfumeName').value.trim();
             const vol = parseFloat(document.getElementById('flaconVolume').value);
@@ -980,14 +1197,6 @@
             const source = document.getElementById('saleSourceSingle').value;
             const client = document.getElementById('clientNameSingle').value.trim();
 
-            // NEW FIELDS CAPTURE
-            const phone = document.getElementById('phoneSingle').value.trim();
-            const fullName = document.getElementById('fullNameSingle').value.trim();
-            const city = document.getElementById('citySingle').value.trim();
-            const postOffice = document.getElementById('postOfficeSingle').value.trim();
-            const comments = document.getElementById('commentsSingle').value.trim();
-            // END NEW FIELDS
-            
             if(!name || isNaN(vol) || !markup) {
                 showToast("Заповніть назву, об'єм та націнку", "error");
                 return;
@@ -1009,135 +1218,93 @@
                 quantityML: vol,
                 revenue: calc.revenue,
                 profit: calc.profit,
-                costTotal: calc.costTotal,
-                ttnNumber: null,
-                orderId: null
+                costTotal: calc.costTotal
             };
-
+            
             const txs = getTransactions();
             txs.push(tx);
             saveTransactions(txs);
-            
-            // Decrease Stock (Allows negative)
-            PERFUME_STOCK[name] = (PERFUME_STOCK[name] || 0) - vol;
-            saveInventory();
-            
-            // NEW: Add Task with all details
-            const taskDescription = `Відправити/Видати: ${name} (${vol} мл) [${source}]`;
-            addTask(taskDescription, 'sale', tx.id, client, phone, city, postOffice, fullName, comments);
 
             showToast(`Продано: ${name} (${calc.revenue} ₴)`, "success");
-            showModalReceipt([tx], calc.revenue, client, null);
-            
+            showModalReceipt([tx], calc.revenue, client);
+
             document.getElementById('perfumeName').value = '';
             document.getElementById('clientNameSingle').value = '';
-            // Clear new fields
-            document.getElementById('phoneSingle').value = '';
-            document.getElementById('fullNameSingle').value = '';
-            document.getElementById('citySingle').value = '';
-            document.getElementById('postOfficeSingle').value = '';
-            document.getElementById('commentsSingle').value = '';
+            document.getElementById('flaconVolume').value = '';
             
             updateDashboard();
-            populateFormOptions();
+            populateFormOptions(); // Оновлення datalist клієнтів
         }
 
-        // --- ACTIONS: ORDER (Multi) (UPDATED) ---
+        // --- ACTIONS: ORDER ---
         window.addItemToOrder = function() {
             const name = document.getElementById('orderPerfumeName').value.trim();
             const vol = parseFloat(document.getElementById('orderFlaconVolume').value);
             const markup = document.getElementById('saleMarkupTierOrder').value;
 
             if(!name || isNaN(vol) || !markup) {
-                showToast("Виберіть парфум та об'єм", "error");
+                showToast("Заповніть назву, об'єм та націнку для позиції", "error");
                 return;
             }
-            
+
             const calc = calculateCost(name, vol, markup);
             if(!calc) {
                 showToast("Парфум не знайдено", "error");
                 return;
             }
 
-            CURRENT_ORDER_LIST.push({ ...calc, name, vol, markup });
+            CURRENT_ORDER_LIST.push({ 
+                ...calc, 
+                name, 
+                vol, 
+                markup,
+                id: Date.now() + Math.random() // Тимчасовий ID для видалення
+            });
             renderOrderList();
             document.getElementById('orderPerfumeName').value = '';
+            document.getElementById('orderFlaconVolume').value = '';
             showToast("Позицію додано до замовлення", "warning");
         }
 
-        window.removeItemFromOrder = function(index) {
-            CURRENT_ORDER_LIST.splice(index, 1);
-            renderOrderList();
-        }
-
-        function renderOrderList() {
+        window.renderOrderList = function() {
             const tbody = document.querySelector('#order-list-table tbody');
             tbody.innerHTML = '';
             let total = 0;
-            const client = document.getElementById('clientNameOrder').value.trim() || 'Клієнт';
-            const markupName = document.getElementById('saleMarkupTierOrder').value || '---';
-            const source = document.getElementById('saleSourceOrder').value || '---';
-            const ttn = document.getElementById('ttnNumberOrder').value.trim() || '(Додати пізніше)';
-            
-            const phone = document.getElementById('phoneOrder').value.trim() || '---';
-            const fullName = document.getElementById('fullNameOrder').value.trim() || '---';
-            const city = document.getElementById('cityOrder').value.trim() || '---';
-            const postOffice = document.getElementById('postOfficeOrder').value.trim() || '---';
-            const comments = document.getElementById('commentsOrder').value.trim() || '---';
+            let totalCost = 0;
+            const summaryEl = document.getElementById('orderSummaryOutput');
+            let summaryText = '';
 
-            const updateFunc = () => { renderOrderList(); };
-            document.getElementById('clientNameOrder').oninput = updateFunc;
-            document.getElementById('saleMarkupTierOrder').onchange = updateFunc;
-            document.getElementById('saleSourceOrder').onchange = updateFunc;
-            document.getElementById('ttnNumberOrder').oninput = updateFunc;
-            document.getElementById('phoneOrder').oninput = updateFunc;
-            document.getElementById('fullNameOrder').oninput = updateFunc;
-            document.getElementById('cityOrder').oninput = updateFunc;
-            document.getElementById('postOfficeOrder').oninput = updateFunc;
-            document.getElementById('commentsOrder').oninput = updateFunc;
-            
-            let summaryText = `📝 НОВЕ ЗАМОВЛЕННЯ (${source}):\n`;
-            summaryText += `👤 Клієнт: ${client}\n`;
-            summaryText += `💰 Націнка: ${markupName}\n`;
-            
-            // Add Shipping Details to Summary
-            summaryText += `\n--- Реквізити ---\n`;
-            summaryText += `ПІБ: ${fullName}\n`;
-            summaryText += `Телефон: ${phone}\n`;
-            summaryText += `Місто: ${city}\n`;
-            summaryText += `Відділення НП: ${postOffice}\n`;
-            summaryText += comments !== '---' ? `Коментар: ${comments}\n` : '';
-            summaryText += `-------------------\n\n`;
-
-            summaryText += `--- Товари ---\n`;
-
+            if (CURRENT_ORDER_LIST.length > 0) {
+                summaryText = "Ваше замовлення:\n";
+            }
 
             CURRENT_ORDER_LIST.forEach((item, idx) => {
                 total += item.revenue;
-                
-                summaryText += `${idx+1}. ${item.name} | ${item.vol} мл | ${item.revenue.toFixed(2)} ₴\n`;
-                
+                totalCost += item.costTotal;
                 tbody.innerHTML += `
                     <tr>
                         <td>${item.name}</td>
                         <td class="text-right">${item.vol} мл</td>
                         <td class="text-right">${item.revenue.toFixed(2)} ₴</td>
-                        <td class="text-right"><button class="btn-danger btn-sm" onclick="removeItemFromOrder(${idx})">x</button></td>
+                        <td class="text-right"><button class="btn-danger btn-sm" onclick="removeItemFromOrder(${item.id})"><i class="fa-solid fa-xmark"></i></button></td>
                     </tr>
                 `;
+                summaryText += `- ${item.name} (${item.vol} мл) - ${item.revenue.toFixed(2)} ₴\n`;
             });
             
-            summaryText += `\n📦 Загальна сума: ${total.toFixed(2)} ₴\n`;
-            summaryText += `🚀 ТТН: ${ttn}\n`; 
-            
+            summaryText += `\nВсього: ${total.toFixed(2)} ₴`;
+            summaryEl.value = summaryText;
 
+            document.getElementById('orderTotalSection').textContent = `Всього до сплати: ${total.toFixed(2)} ₴`;
+        }
 
-            document.getElementById('orderTotalSection').textContent = `Загалом: ${total.toFixed(2)} ₴`;
-            document.getElementById('orderSummaryOutput').value = summaryText;
+        window.removeItemFromOrder = function(id) {
+            CURRENT_ORDER_LIST = CURRENT_ORDER_LIST.filter(item => item.id !== id);
+            renderOrderList();
         }
 
         window.processOrder = function() {
-            if(CURRENT_ORDER_LIST.length === 0) {
+            if (CURRENT_ORDER_LIST.length === 0) {
                 showToast("Кошик порожній!", "error");
                 return;
             }
@@ -1145,98 +1312,41 @@
             const client = document.getElementById('clientNameOrder').value.trim();
             const source = document.getElementById('saleSourceOrder').value;
             const markup = document.getElementById('saleMarkupTierOrder').value;
-            const ttn = document.getElementById('ttnNumberOrder').value.trim() || null;
-            
-            // NEW FIELDS CAPTURE
-            const phone = document.getElementById('phoneOrder').value.trim();
-            const fullName = document.getElementById('fullNameOrder').value.trim();
-            const city = document.getElementById('cityOrder').value.trim();
-            const postOffice = document.getElementById('postOfficeOrder').value.trim();
-            const comments = document.getElementById('commentsOrder').value.trim();
-            // END NEW FIELDS
+            const totalRevenue = CURRENT_ORDER_LIST.reduce((acc, item) => acc + item.revenue, 0);
 
-            if(!client || !source) {
-                showToast("Вкажіть клієнта та джерело!", "error");
-                return;
-            }
-            
-            if (!ttn) {
-                showToast("⚠️ Номер ТТН не вказано. Його можна додати пізніше в 'Історії'", "warning");
-            }
-
-
-            const txs = getTransactions();
-            const total = CURRENT_ORDER_LIST.reduce((acc, item) => acc + item.revenue, 0);
-            const orderId = Date.now();
-            
-            const newTransactions = CURRENT_ORDER_LIST.map(item => ({
-                id: Date.now() + Math.random(), 
-                timestamp: orderId, 
-                clientName: client,
+            const transactions = CURRENT_ORDER_LIST.map(item => ({
+                id: Date.now() + Math.random(),
+                timestamp: Date.now(),
+                clientName: client || '---',
                 source: source,
                 markupTier: markup,
                 perfumeName: item.name,
                 quantityML: item.vol,
                 revenue: item.revenue,
                 profit: item.profit,
-                costTotal: item.costTotal,
-                ttnNumber: ttn,
-                orderId: orderId 
+                costTotal: item.costTotal
             }));
-            
-            txs.push(...newTransactions);
+
+            const txs = getTransactions();
+            txs.push(...transactions);
             saveTransactions(txs);
-            
-            // Decrease Stock (Allows negative)
-            let totalVolume = {}; 
-            CURRENT_ORDER_LIST.forEach(item => {
-                totalVolume[item.name] = (totalVolume[item.name] || 0) + item.vol;
-            });
-            for (const name in totalVolume) {
-                PERFUME_STOCK[name] = (PERFUME_STOCK[name] || 0) - totalVolume[name];
-            }
-            saveInventory();
-            
-            // NEW: Add Task with all details
-            const itemSummary = CURRENT_ORDER_LIST.map(item => `${item.name} (${item.vol} мл)`).join(', ');
-            const taskDescription = `Оформити відправку замовлення (${client}) - ${itemSummary}`;
-            addTask(taskDescription, 'order', orderId, client, phone, city, postOffice, fullName, comments);
-            
-            showToast(`Замовлення на ${total.toFixed(2)} ₴ оформлено!`, "success");
-            showModalReceipt(newTransactions, total.toFixed(2), client, ttn);
-            
-            CURRENT_ORDER_LIST = [];
-            // Clear new fields
-            document.getElementById('phoneOrder').value = '';
-            document.getElementById('fullNameOrder').value = '';
-            document.getElementById('cityOrder').value = '';
-            document.getElementById('postOfficeOrder').value = '';
-            document.getElementById('commentsOrder').value = '';
-            
-            document.getElementById('clientNameOrder').value = '';
-            document.getElementById('ttnNumberOrder').value = '';
-            
-            renderOrderList();
+
+            showToast(`Замовлення на ${totalRevenue.toFixed(2)} ₴ оформлено!`, "success");
+            showModalReceipt(CURRENT_ORDER_LIST.map(item => ({...item, quantityML: item.vol})), totalRevenue, client);
+            clearOrder();
             updateDashboard();
-            populateFormOptions();
+            populateFormOptions(); // Оновлення datalist клієнтів
         }
 
         window.clearOrder = function() {
-            if(!confirm("Очистити кошик?")) return;
             CURRENT_ORDER_LIST = [];
-            document.getElementById('clientNameOrder').value = '';
-            document.getElementById('ttnNumberOrder').value = '';
-            document.getElementById('phoneOrder').value = '';
-            document.getElementById('fullNameOrder').value = '';
-            document.getElementById('cityOrder').value = '';
-            document.getElementById('postOfficeOrder').value = '';
-            document.getElementById('commentsOrder').value = '';
             renderOrderList();
+            document.getElementById('clientNameOrder').value = '';
         }
 
+        // Copy Order Summary
         window.copyOrderSummary = function() {
             const outputEl = document.getElementById('orderSummaryOutput');
-            
             if (outputEl.value) {
                 outputEl.select();
                 navigator.clipboard.writeText(outputEl.value).then(() => {
@@ -1249,687 +1359,584 @@
             }
         }
 
-
         // --- HISTORY & REPORT ---
+        window.generateReport = function() {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+
+            if (!start || !end) {
+                showToast("Оберіть початкову та кінцеву дату.", "error");
+                return;
+            }
+
+            const startTime = new Date(start).getTime();
+            const endTime = new Date(end).getTime() + 86400000; // Додаємо 1 день
+
+            const txs = getTransactions().filter(t => t.timestamp >= startTime && t.timestamp < endTime);
+            const exps = getExpenses().filter(e => e.timestamp >= startTime && e.timestamp < endTime);
+
+            const totalRevenue = txs.reduce((a, b) => a + b.revenue, 0);
+            const totalProfit = txs.reduce((a, b) => a + b.profit, 0);
+            const totalExpenses = exps.reduce((a, b) => a + b.amount, 0);
+            const netProfit = totalProfit - totalExpenses;
+            
+            const salesByPerfume = txs.reduce((acc, t) => {
+                acc[t.perfumeName] = (acc[t.perfumeName] || 0) + t.quantityML;
+                return acc;
+            }, {});
+
+            let reportHTML = `
+                <div class="card" style="padding: 15px; background: var(--white);">
+                    <h3>Звіт за період: ${start} — ${end}</h3>
+                    <table class="data-table" style="margin-bottom: 20px; min-width: auto;">
+                        <tr><td>💰 Загальна виручка:</td><td class="text-right text-bold">${totalRevenue.toFixed(2)} ₴</td></tr>
+                        <tr><td>✅ Загальний валовий прибуток:</td><td class="text-right text-bold text-success">${totalProfit.toFixed(2)} ₴</td></tr>
+                        <tr><td>💸 Загальні витрати:</td><td class="text-right text-bold text-danger">${totalExpenses.toFixed(2)} ₴</td></tr>
+                        <tr><td>🔥 Чистий прибуток (Валовий - Витрати):</td><td class="text-right text-bold" style="font-size: 1.1rem; color: ${netProfit >= 0 ? 'var(--secondary)' : 'var(--danger)'}">${netProfit.toFixed(2)} ₴</td></tr>
+                    </table>
+                    
+                    <h3>Популярність парфумів (мл)</h3>
+                    <ul>
+                        ${Object.entries(salesByPerfume).sort(([, a], [, b]) => b - a).map(([name, vol]) => `<li>${name}: ${vol.toFixed(1)} мл</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+            document.getElementById('reportOutput').innerHTML = reportHTML;
+        }
+
         window.renderTransactionHistory = function() {
             const search = document.getElementById('transactionSearch').value.toLowerCase();
             const sourceFilter = document.getElementById('historyFilterSource').value;
             const dateFilter = document.getElementById('historyStartDate').value;
             const tbody = document.querySelector('#transaction-history-table tbody');
             tbody.innerHTML = '';
-            let txs = getTransactions().sort((a,b) => b.timestamp - a.timestamp); 
+            
+            let txs = getTransactions().sort((a,b) => b.timestamp - a.timestamp);
             let filteredCount = 0;
             let totalRev = 0;
             let totalProf = 0;
 
-            let displayedOrderIds = new Set(); 
-
             txs.forEach(t => {
-                if(t.orderId && displayedOrderIds.has(t.orderId)) return;
-                displayedOrderIds.add(t.orderId);
-
-                if(search && !t.perfumeName.toLowerCase().includes(search) && !t.clientName.toLowerCase().includes(search) && !t.source.toLowerCase().includes(search)) return;
+                if(search && !t.perfumeName.toLowerCase().includes(search) && !t.clientName.toLowerCase().includes(search)) return;
                 if(sourceFilter && t.source !== sourceFilter) return;
                 if(dateFilter) {
                     const txDate = new Date(t.timestamp).toISOString().split('T')[0];
                     if(txDate !== dateFilter) return;
                 }
 
-                let displayItems = [t];
-                if (t.orderId) {
-                    displayItems = getTransactions().filter(tx => tx.orderId === t.orderId);
-                }
-                const totalRevenue = displayItems.reduce((acc, item) => acc + (parseFloat(item.revenue) || 0), 0);
-                const totalProfit = displayItems.reduce((acc, item) => acc + (parseFloat(item.profit) || 0), 0);
-                const infoText = t.orderId ? `Замовлення (${displayItems.length} поз.)` : `${t.perfumeName} (${t.quantityML} мл)`;
-                
                 filteredCount++;
-                totalRev += totalRevenue;
-                totalProf += totalProfit;
-
-                const ttnDisplay = t.ttnNumber 
-                    ? `<a href="https://novaposhta.ua/tracking/?cargo_key=${t.ttnNumber}" target="_blank" style="text-decoration:none; color: var(--primary); font-weight: 600; font-size: 0.85rem;">${t.ttnNumber} <i class="fa-solid fa-external-link-alt" style="font-size: 0.75rem;"></i></a>`
-                    : '<span style="color: #6c757d;"><i class="fa-solid fa-minus"></i></span>';
-                
-                const deleteButton = t.orderId 
-                    ? `<button class="btn-danger btn-sm" onclick="deleteOrder(${t.orderId})"><i class="fa-solid fa-trash"></i></button>`
-                    : `<button class="btn-danger btn-sm" onclick="deleteTx(${t.id})"><i class="fa-solid fa-trash"></i></button>`;
+                totalRev += t.revenue;
+                totalProf += t.profit;
 
                 tbody.innerHTML += `
                     <tr>
                         <td>${new Date(t.timestamp).toLocaleDateString()}</td>
                         <td>${t.clientName}</td>
                         <td style="font-size: 0.8rem; color: gray;">${t.source}</td>
-                        <td>${ttnDisplay}</td>
-                        <td>${infoText}</td>
-                        <td class="text-right text-bold">${totalRevenue.toFixed(2)}</td>
-                        <td class="text-right ${totalProfit >= 0 ? 'text-success' : 'text-danger'}">${totalProfit.toFixed(2)}</td>
-                        <td class="text-right">${deleteButton}</td>
+                        <td>${t.perfumeName} (${t.quantityML} мл)</td>
+                        <td class="text-right text-bold">${t.revenue.toFixed(2)}</td>
+                        <td class="text-right ${t.profit >= 0 ? 'text-success' : 'text-danger'}">${t.profit.toFixed(1)}</td>
+                        <td class="text-right"><button class="btn-danger btn-sm" onclick="deleteTx(${t.id})"><i class="fa-solid fa-trash"></i></button></td>
                     </tr>
                 `;
             });
-
             document.getElementById('transactionSummary').innerHTML = `Записів: ${filteredCount} | Виручка: ${totalRev.toFixed(2)} ₴ | Прибуток: ${totalProf.toFixed(2)} ₴`;
         }
-        
-        window.deleteOrder = function(orderId) {
-            if(!confirm("Видалити ВСЕ замовлення?")) return;
-            
-            // Get volume to potentially add back to stock
-            const txsToDelete = getTransactions().filter(t => t.orderId === orderId);
-            txsToDelete.forEach(t => {
-                PERFUME_STOCK[t.perfumeName] = (PERFUME_STOCK[t.perfumeName] || 0) + (parseFloat(t.quantityML) || 0);
-            });
 
-            let txs = getTransactions().filter(t => t.orderId !== orderId);
-            
-            // Also delete related task
-            saveTasks(getTasks().filter(t => t.relatedId !== orderId || t.type !== 'order'));
-            
-            saveTransactions(txs);
-            saveInventory(); 
-            renderTransactionHistory();
-            updateDashboard();
-            showToast("Замовлення видалено.", "error");
-        }
-        
         window.deleteTx = function(id) {
-            if(!confirm("Видалити цю транзакцію?")) return;
-            
-            // Get volume to potentially add back to stock
-            const txToDelete = getTransactions().find(t => t.id === id);
-            if (txToDelete) {
-                PERFUME_STOCK[txToDelete.perfumeName] = (PERFUME_STOCK[txToDelete.perfumeName] || 0) + (parseFloat(txToDelete.quantityML) || 0);
-            }
-            
-            // Also delete related task
-            saveTasks(getTasks().filter(t => t.relatedId !== id || t.type !== 'sale'));
-            
-            saveTransactions(getTransactions().filter(t => t.id !== id));
-            saveInventory(); 
+            if(!confirm("Видалити запис?")) return;
+            let txs = getTransactions().filter(t => t.id !== id);
+            saveTransactions(txs);
             renderTransactionHistory();
             updateDashboard();
             showToast("Транзакцію видалено.", "error");
         }
-        
-        window.generateReport = function() {
-            const start = document.getElementById('startDate').value;
-            const end = document.getElementById('endDate').value;
 
-            if(!start || !end) {
-                document.getElementById('reportOutput').innerHTML = '<p class="text-danger">Виберіть початкову та кінцеву дату.</p>';
-                return;
-            }
-
-            const startDate = new Date(start).getTime();
-            const endDate = new Date(end).getTime() + 86400000; // Include end day
-
-            const txs = getTransactions().filter(t => t.timestamp >= startDate && t.timestamp <= endDate);
-            
-            // FIX: Use parseFloat with fallback
-            const totalRevenue = txs.reduce((sum, t) => sum + (parseFloat(t.revenue) || 0), 0);
-            const totalProfit = txs.reduce((sum, t) => sum + (parseFloat(t.profit) || 0), 0);
-            
-            const expenses = getExpenses().filter(e => e.timestamp >= startDate && e.timestamp <= endDate);
-            const totalExpense = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-            
-            const netProfit = totalProfit - totalExpense;
-
-            const reportHTML = `
-                <div class="card" style="border-left: 5px solid var(--secondary);">
-                    <h4>Звіт за період: ${start} – ${end}</h4>
-                    <p>Продажів: <strong>${txs.length}</strong></p>
-                    <p>Загальна Виручка: <strong class="text-bold">${totalRevenue.toFixed(2)} ₴</strong></p>
-                    <p>Валовий Прибуток: <strong class="text-bold text-success">${totalProfit.toFixed(2)} ₴</strong></p>
-                    <p>Загальні Витрати: <strong class="text-bold text-danger">${totalExpense.toFixed(2)} ₴</strong></p>
-                    <h4 style="margin-top: 15px;">Чистий Прибуток: <span class="text-bold ${netProfit >= 0 ? 'text-success' : 'text-danger'}">${netProfit.toFixed(2)} ₴</span></h4>
-                </div>
-            `;
-            document.getElementById('reportOutput').innerHTML = reportHTML;
-        }
-
-        // --- ADMIN PANEL FUNCTIONS ---
-        
-        window.editPerfume = function(name) {
-            const pData = PERFUME_PRICES[name];
-            if (pData) {
-                document.getElementById('adminPerfumeName').value = name;
-                document.getElementById('adminBasePrice').value = pData.basePrice;
-                document.getElementById('adminDiscountVolume').value = pData.discountVolume;
-                document.getElementById('adminDiscountPrice').value = pData.discountPrice;
-                showToast(`Редагування: ${name}. Збережіть зміни!`, "warning");
-                // Scroll to form for better UX
-                document.getElementById('adminPerfumeName').focus();
-            } else {
-                showToast(`Парфум "${name}" не знайдено!`, "error");
+        // --- ADMIN PANEL & CONFIG ---
+        window.clearAllData = function() {
+            if (confirm("Ви впевнені? ВСІ ДАНІ (транзакції, парфуми, налаштування) БУДУТЬ ВИДАЛЕНІ!")) {
+                localStorage.clear();
+                window.location.reload();
             }
         }
-        
-        window.addStock = function() {
-            const name = document.getElementById('inventoryPerfumeName').value.trim();
-            const volume = parseFloat(document.getElementById('inventoryVolume').value);
-            
-            if (!name || isNaN(volume) || volume <= 0) {
-                showToast("Введіть коректну назву парфуму та об'єм.", "error");
+
+        window.resetDefaultData = function() {
+            if (confirm("Ви впевнені? Будуть видалені ВСІ ВАШІ НАЛАШТУВАННЯ та ПРАЙС-ЛИСТ, але історія продажів збережеться!")) {
+                localStorage.removeItem(CONFIG_KEYS.PRICES);
+                localStorage.removeItem(CONFIG_KEYS.VOLUMES);
+                localStorage.removeItem(CONFIG_KEYS.FLACONS);
+                localStorage.removeItem(CONFIG_KEYS.MARKUPS);
+                localStorage.removeItem(CONFIG_KEYS.SOURCES);
+                window.location.reload();
+            }
+        }
+
+        // Add or Update Perfume
+        window.addOrUpdatePerfume = function() {
+            const name = document.getElementById('adminPerfumeName').value.trim();
+            const basePrice = parseFloat(document.getElementById('adminBasePrice').value);
+            let discountVolume = parseFloat(document.getElementById('adminDiscountVolume').value) || 0;
+            const discountPrice = parseFloat(document.getElementById('adminDiscountPrice').value) || basePrice;
+
+            if(!name || isNaN(basePrice) || basePrice <= 0) {
+                showToast("Введіть назву та базову С/С!", "error");
                 return;
             }
             
-            if (!PERFUME_PRICES[name]) {
-                showToast(`Парфум "${name}" не знайдено в довіднику. Спершу додайте його.`, "error");
-                return;
-            }
-            
-            PERFUME_STOCK[name] = (PERFUME_STOCK[name] || 0) + volume;
-            saveInventory();
-            
-            showToast(`✅ ${volume} мл "${name}" додано до запасу.`, "success");
-            document.getElementById('inventoryPerfumeName').value = '';
-            document.getElementById('inventoryVolume').value = '';
-            
-            renderInventoryList();
-            updateDashboard();
-        }
-        
-        window.renderInventoryList = function() {
-            const tbody = document.querySelector('#inventory-list-table tbody');
-            tbody.innerHTML = '';
-            
-            Object.keys(PERFUME_STOCK).sort().forEach(name => {
-                const stock = PERFUME_STOCK[name];
-                const stockDisplay = stock.toFixed(0);
-                // Check if stock is negative or below the new LOW_STOCK_THRESHOLD
-                const isLow = stock < LOW_STOCK_THRESHOLD; 
-                const statusClass = stock < 0 ? 'text-danger' : (stock >= 0 && stock < LOW_STOCK_THRESHOLD ? 'text-warning' : 'text-success');
-                const statusIcon = stock < 0 ? '❌' : (stock < LOW_STOCK_THRESHOLD ? '⚠️' : '✅');
-                
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${name}</td>
-                        <td class="text-right text-bold ${statusClass}">${statusIcon} ${stockDisplay} мл</td>
-                        <td class="text-right">
-                            <button class="btn-warning btn-sm" onclick="promptAddStock('${name}')">➕</button>
-                            <button class="btn-danger btn-sm" onclick="setStockToZero('${name}')">❌</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-        
-        window.promptAddStock = function(name) {
-            const currentStock = parseFloat(PERFUME_STOCK[name] || 0);
-            const add = prompt(`Скільки мл ${name} додати до запасу? (Поточний: ${currentStock.toFixed(0)} мл)`);
-            const volume = parseFloat(add);
-            if (volume > 0) {
-                PERFUME_STOCK[name] = currentStock + volume;
-                saveInventory();
-                renderInventoryList();
-                updateDashboard();
-                showToast(`➕ ${volume} мл "${name}" додано.`, "success");
-            }
-        }
-        
-        window.setStockToZero = function(name) {
-             if(confirm(`Скинути запас "${name}" на 0? Це варто робити тільки якщо парфум закінчився.`)) {
-                PERFUME_STOCK[name] = 0;
-                saveInventory();
-                renderInventoryList();
-                updateDashboard();
-                showToast(`Запас "${name}" скинуто.`, "warning");
-             }
+            // Забезпечуємо, що discountPrice не перевищує basePrice
+            const finalDiscountPrice = Math.min(basePrice, discountPrice);
+
+            PERFUME_PRICES[name] = {
+                basePrice: basePrice,
+                discountVolume: discountVolume,
+                discountPrice: finalDiscountPrice
+            };
+            localStorage.setItem(CONFIG_KEYS.PRICES, JSON.stringify(PERFUME_PRICES));
+            renderPerfumeList();
+            populateFormOptions();
+            showToast("Парфум збережено!", "success");
+
+            // Clear inputs after save, reset discount volume to default
+            document.getElementById('adminPerfumeName').value = '';
+            document.getElementById('adminBasePrice').value = '';
+            document.getElementById('adminDiscountVolume').value = '5';
+            document.getElementById('adminDiscountPrice').value = '';
         }
 
+        // Render Perfume List
         window.renderPerfumeList = function() {
             const search = document.getElementById('perfumeSearchInput').value.toLowerCase();
             const tbody = document.querySelector('#perfume-list-table tbody');
             tbody.innerHTML = '';
             
-            Object.keys(PERFUME_PRICES).sort().forEach(name => {
+            Object.entries(PERFUME_PRICES).sort().forEach(([name, data]) => {
                 if(search && !name.toLowerCase().includes(search)) return;
-                const pData = PERFUME_PRICES[name];
                 tbody.innerHTML += `
                     <tr>
                         <td>${name}</td>
-                        <td class="text-right">${pData.basePrice.toFixed(2)} ₴/мл</td>
+                        <td class="text-right">${data.basePrice} ₴/мл${data.discountVolume > 0 ? ` (<i class="fa-solid fa-tag"></i> ${data.discountPrice} за >${data.discountVolume} мл)` : ''}</td>
                         <td class="text-right">
-                            <button class="btn-warning btn-sm" onclick="editPerfume('${name}')">🖋️</button>
-                            <button class="btn-danger btn-sm" onclick="deletePerfume('${name}')">🗑️</button>
+                            <button class="btn-warning btn-sm" onclick="editPerfume('${name}')"><i class="fa-solid fa-edit"></i></button>
+                            <button class="btn-danger btn-sm" onclick="deletePerfume('${name}')"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 `;
             });
         }
-        
+
+        window.editPerfume = function(name) {
+            const data = PERFUME_PRICES[name];
+            if (!data) return;
+            document.getElementById('adminPerfumeName').value = name;
+            document.getElementById('adminBasePrice').value = data.basePrice;
+            document.getElementById('adminDiscountVolume').value = data.discountVolume;
+            document.getElementById('adminDiscountPrice').value = data.discountPrice;
+            showToast(`Редагування: ${name}`, "warning");
+        }
+
         window.deletePerfume = function(name) {
-            if(!confirm(`Видалити парфум "${name}"? Це також видалить його з запасу!`)) return;
+            if(!confirm("Видалити " + name + "?")) return;
             delete PERFUME_PRICES[name];
-            delete PERFUME_STOCK[name]; 
             localStorage.setItem(CONFIG_KEYS.PRICES, JSON.stringify(PERFUME_PRICES));
-            saveInventory(); 
             renderPerfumeList();
-            renderInventoryList(); 
             populateFormOptions();
-            showToast(`Парфум "${name}" видалено.`, "error");
+            showToast("Парфум видалено!", "error");
         }
-
-        window.addOrUpdatePerfume = function() {
-            const name = document.getElementById('adminPerfumeName').value.trim();
-            const basePrice = parseFloat(document.getElementById('adminBasePrice').value);
-            const discountVolume = parseFloat(document.getElementById('adminDiscountVolume').value);
-            const discountPrice = parseFloat(document.getElementById('adminDiscountPrice').value);
-            
-            if (!name || isNaN(basePrice) || isNaN(discountPrice) || isNaN(discountVolume)) {
-                showToast("Заповніть всі поля довідника парфумів.", "error");
-                return;
-            }
-
-            const isNew = PERFUME_PRICES[name] === undefined;
-
-            PERFUME_PRICES[name] = { basePrice, discountVolume, discountPrice };
-            localStorage.setItem(CONFIG_KEYS.PRICES, JSON.stringify(PERFUME_PRICES));
-            
-            if (isNew) {
-                 PERFUME_STOCK[name] = 0; 
-                 saveInventory();
-            }
-            
-            showToast(`Парфум "${name}" збережено/оновлено.`, "success");
-            
-            document.getElementById('adminPerfumeName').value = '';
-            document.getElementById('adminBasePrice').value = '';
-            document.getElementById('adminDiscountPrice').value = '';
-            document.getElementById('adminDiscountVolume').value = '5'; // Reset volume for discount
-
-            renderPerfumeList();
-            renderInventoryList(); 
-            populateFormOptions();
-        }
-
+        
+        // Add or Update Flacon
         window.addOrUpdateFlacon = function() {
             const vol = parseFloat(document.getElementById('adminFlaconVolume').value);
             const cost = parseFloat(document.getElementById('adminFlaconCost').value);
 
-            if (isNaN(vol) || isNaN(cost)) {
-                showToast("Введіть коректний об'єм та ціну.", "error");
+            if(isNaN(vol) || isNaN(cost) || vol <= 0) {
+                showToast("Введіть коректний об'єм та вартість флакону.", "error");
                 return;
             }
 
             FLACON_COSTS[vol] = cost;
-            if (!FLACON_VOLUMES.includes(vol)) {
+            if(!FLACON_VOLUMES.includes(vol)) {
                 FLACON_VOLUMES.push(vol);
+                FLACON_VOLUMES.sort((a,b) => a-b);
+                localStorage.setItem(CONFIG_KEYS.VOLUMES, JSON.stringify(FLACON_VOLUMES));
             }
             localStorage.setItem(CONFIG_KEYS.FLACONS, JSON.stringify(FLACON_COSTS));
-            localStorage.setItem(CONFIG_KEYS.VOLUMES, JSON.stringify(FLACON_VOLUMES));
-            showToast(`Флакон ${vol} мл (${cost} ₴) збережено/оновлено.`, "success");
+            populateFormOptions();
+            showToast(`Флакон ${vol} мл збережено!`, "success");
+
             document.getElementById('adminFlaconVolume').value = '';
             document.getElementById('adminFlaconCost').value = '';
-            populateFormOptions();
         }
 
+        // Add or Update Markup Preset
         window.addOrUpdateMarkupPreset = function() {
             const name = document.getElementById('adminMarkupName').value.trim();
             const value = parseFloat(document.getElementById('adminMarkupValue').value);
 
-            if (!name || isNaN(value)) {
-                showToast("Введіть коректну назву та коефіцієнт (напр. 0.12).", "error");
+            if(!name || isNaN(value) || value < 0) {
+                showToast("Введіть назву та коректний коефіцієнт націнки (напр. 0.10).", "error");
                 return;
             }
-            
+
             MARKUP_PRESETS[name] = value;
             localStorage.setItem(CONFIG_KEYS.MARKUPS, JSON.stringify(MARKUP_PRESETS));
-            showToast(`Націнка "${name}" збережена.`, "success");
+            populateFormOptions();
+            showToast(`Націнку "${name}" оновлено!`, "success");
+            
             document.getElementById('adminMarkupName').value = '';
             document.getElementById('adminMarkupValue').value = '';
-            populateFormOptions();
         }
-        
-        window.renderExpenseList = function() {
-            const exps = getExpenses().sort((a, b) => b.timestamp - a.timestamp);
-            const total = exps.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
-            let html = `
-                <h4>Останні витрати (Всього: ${total.toFixed(2)} ₴)</h4>
-                <div class="table-responsive">
-                    <table>
-                        <thead><tr><th>Дата</th><th>Опис</th><th class="text-right">Сума</th><th class="text-right">Дія</th></tr></thead>
-                        <tbody>
-            `;
-            exps.forEach(e => {
-                html += `
-                    <tr>
-                        <td>${new Date(e.timestamp).toLocaleDateString()}</td>
-                        <td>${e.description}</td>
-                        <td class="text-right text-danger">${(parseFloat(e.amount) || 0).toFixed(2)} ₴</td>
-                        <td class="text-right"><button class="btn-danger btn-sm" onclick="deleteExpense(${e.id})">🗑️</button></td>
-                    </tr>
-                `;
+        // Generate Price List
+        window.generatePriceList = function() {
+            const markupName = document.getElementById('priceListMarkup').value;
+            const markup = MARKUP_PRESETS[markupName];
+            if (!markup) {
+                showToast("Виберіть націнку!", "error");
+                return;
+            }
+
+            let priceListText = `Прайс-лист "PerfumeFlow" (${markupName}):\n\n`;
+            
+            const perfumeNames = Object.keys(PERFUME_PRICES).sort();
+            perfumeNames.forEach(name => {
+                const pData = PERFUME_PRICES[name];
+                // Calculate the FIXED retail price per ML (without flacon)
+                let retailPriceStandard = pData.basePrice * (1 + markup);
+                let priceLine = `✨ ${name}: ${retailPriceStandard.toFixed(2)} ₴/мл`;
+                priceListText += priceLine + `\n`;
             });
-            html += `</tbody></table></div>`;
-            document.getElementById('expenseListOutput').innerHTML = html;
+
+            // Add flacon cost info
+            priceListText += `\n--- 🧴 Вартість порожніх флаконів (додається до ціни парфуму) ---\n`;
+            FLACON_VOLUMES.sort((a,b)=>a-b).forEach(vol => {
+                priceListText += `* ${vol} мл: ${FLACON_COSTS[vol]} ₴\n`;
+            });
+
+            document.getElementById('priceListOutput').value = priceListText;
+            showToast("Прайс-лист сформовано. Скопіюйте його.", "warning");
         }
 
-        window.addExpense = function() {
-            const desc = document.getElementById('expenseDescription').value.trim();
-            const amount = parseFloat(document.getElementById('expenseAmount').value);
+        // Price Calculator
+        window.calculatePrice = function() {
+            const name = document.getElementById('calcPerfumeName').value.trim();
+            const vol = parseFloat(document.getElementById('calcFlaconVolume').value);
+            const markup = document.getElementById('calcMarkupTier').value;
+            const el = document.getElementById('calculatorOutput');
 
-            if (!desc || isNaN(amount) || amount <= 0) {
-                showToast("Введіть коректний опис та суму витрати.", "error");
+            if (!name || isNaN(vol) || !markup) {
+                el.innerHTML = "";
+                return;
+            }
+
+            const res = calculateCost(name, vol, markup);
+            
+            if (res) {
+                el.innerHTML = `
+                    <div class="stat-card green" style="text-align:center">
+                        <h3>Ціна для клієнта</h3>
+                        <div class="value">${res.revenue} ₴</div>
+                        <small>Валова С/С: ${res.costTotal.toFixed(2)} ₴ | Прибуток: ${res.profit.toFixed(2)} ₴</small>
+                    </div>
+                `;
+            } else {
+                el.innerHTML = "<div class='card' style='border-left: 5px solid var(--danger);'>Помилка даних. Перевірте, чи обрані всі параметри та чи існує парфум в базі.</div>";
+            }
+        }
+
+        // Expenses Logic
+        window.addExpense = function() {
+            const d = document.getElementById('expenseDescription').value;
+            const a = parseFloat(document.getElementById('expenseAmount').value);
+
+            if(!d || isNaN(a) || a <= 0) {
+                showToast("Введіть опис та суму витрати.", "error");
                 return;
             }
 
             const exps = getExpenses();
-            exps.push({ id: Date.now(), timestamp: Date.now(), description: desc, amount: amount });
+            exps.push({ id: Date.now(), timestamp: Date.now(), description: d, amount: a });
             saveExpenses(exps);
+            
+            renderExpenseList();
+            showToast("Витрату додано!", "success");
 
-            showToast(`Витрата "${desc}" (${amount} ₴) зафіксована.`, "danger");
             document.getElementById('expenseDescription').value = '';
             document.getElementById('expenseAmount').value = '';
-            renderExpenseList();
-            updateDashboard();
         }
-        
+
+        window.renderExpenseList = function() {
+            const tbody = document.querySelector('#expense-list-table tbody');
+            tbody.innerHTML = '';
+            
+            getExpenses().sort((a,b) => b.timestamp - a.timestamp).forEach(e => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${new Date(e.timestamp).toLocaleDateString()}</td>
+                        <td>${e.description}</td>
+                        <td class="text-right text-bold text-danger">${e.amount.toFixed(2)} ₴</td>
+                        <td class="text-right"><button class="btn-danger btn-sm" onclick="deleteExpense(${e.id})"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+            });
+        }
+
         window.deleteExpense = function(id) {
             saveExpenses(getExpenses().filter(e => e.id !== id));
             renderExpenseList();
             showToast("Витрату видалено.", "error");
         }
+
+
+        // ====================================================================================
+        // === НОВІ ФУНКЦІЇ ДЛЯ CRM (3), АНАЛІТИКИ (4) ===
+        // ====================================================================================
+
+        // --- 3. РОЗШИРЕНИЙ CRM: ЛОГІКА ---
+        function getClients() {
+            return JSON.parse(localStorage.getItem('clients_data')) || {};
+        }
+
+        function saveClients(clients) {
+            localStorage.setItem('clients_data', JSON.stringify(clients));
+        }
+
+        window.addUpdateClient = function(name, phone, email, dob) {
+            if (!name) return showToast("Ім'я клієнта є обов'язковим.", "error");
+
+            const clients = getClients();
+            
+            // Використовуємо старі дані, якщо нові порожні
+            clients[name] = { 
+                name, 
+                phone: phone || clients[name]?.phone || '', 
+                email: email || clients[name]?.email || '', 
+                dob: dob || clients[name]?.dob || '' 
+            };
+            saveClients(clients);
+            renderClientList();
+            showToast(`Клієнта ${name} збережено/оновлено!`, "success");
+            
+            // Очистити поля після збереження
+            document.getElementById('newClientName').value = '';
+            document.getElementById('newClientPhone').value = '';
+            document.getElementById('newClientEmail').value = '';
+            document.getElementById('newClientDOB').value = '';
+
+            // Оновлення списку клієнтів для datalist
+            populateFormOptions();
+        }
+
+        window.renderClientList = function() {
+            const clients = getClients();
+            const transactions = getTransactions();
+            const tb = document.querySelector('#clientListTable tbody');
+            if (!tb) return;
+            tb.innerHTML = '';
+
+            // Агрегація статистики з транзакцій
+            const clientStats = transactions.reduce((acc, t) => {
+                const name = t.clientName ? t.clientName.trim() : null;
+                if (!name || name === '---') return acc;
+                acc[name] = acc[name] || { count: 0, revenue: 0 };
+                acc[name].count += 1;
+                acc[name].revenue += t.revenue;
+                return acc;
+            }, {});
+
+            // Об'єднуємо збережені дані та статистику
+            const allClientNames = new Set([...Object.keys(clients), ...Object.keys(clientStats)]);
+
+            Array.from(allClientNames).sort().forEach(name => {
+                const client = clients[name] || {};
+                const stats = clientStats[name] || { count: 0, revenue: 0 };
+                
+                tb.innerHTML += `
+                    <tr>
+                        <td>${name}</td>
+                        <td>${client.phone || '-'}</td>
+                        <td>${client.email || '-'}</td>
+                        <td>${stats.count}</td>
+                        <td class="text-right">${stats.revenue.toFixed(2)} ₴</td>
+                    </tr>
+                `;
+            });
+        }
+        // ----------------------------------------------------------------------
+
+
+        // --- 4. АНАЛІТИКА: ЛОГІКА РЕНДЕРИНГУ ГРАФІКІВ ---
+        let revenueChartInstance = null;
+        let topPerfumeChartInstance = null;
         
-        // CRM Logic
+        window.renderAnalyticsCharts = function() {
+            const transactions = getTransactions();
+
+            // 1. Summary Stats
+            const totalProfit = transactions.reduce((acc, t) => acc + (t.profit || 0), 0);
+            document.getElementById('totalProfitCard').textContent = `${totalProfit.toFixed(2)} ₴`;
+            document.getElementById('totalTransactionsCard').textContent = transactions.length;
+            
+            // Якщо графіки вже існують, знищуємо їх для оновлення
+            if (revenueChartInstance) revenueChartInstance.destroy();
+            if (topPerfumeChartInstance) topPerfumeChartInstance.destroy();
+            
+            if (transactions.length === 0) return;
+
+            // 2. Daily Revenue Data (Last 30 Days)
+            const today = new Date();
+            const dailyRevenue = {};
+            const labels = [];
+            
+            // Ініціалізація даних за останні 30 днів
+            for (let i = 29; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                const dateKey = date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' });
+                labels.push(dateKey);
+                dailyRevenue[dateKey] = 0;
+            }
+
+            transactions.forEach(t => {
+                const transactionDate = new Date(t.timestamp);
+                const dateKey = transactionDate.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' });
+                if (dailyRevenue.hasOwnProperty(dateKey)) {
+                    dailyRevenue[dateKey] = (dailyRevenue[dateKey] || 0) + (t.revenue || 0);
+                }
+            });
+
+            const revenueData = labels.map(key => dailyRevenue[key]);
+
+            // 3. Top Perfume Data
+            const perfumeSales = {};
+            transactions.forEach(t => {
+                if (t.perfumeName && t.quantityML) {
+                    perfumeSales[t.perfumeName] = (perfumeSales[t.perfumeName] || 0) + (t.quantityML || 0);
+                }
+            });
+
+            const topPerfumes = Object.entries(perfumeSales)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 5);
+            
+            const perfumeLabels = topPerfumes.map(item => item[0]);
+            const perfumeData = topPerfumes.map(item => item[1]);
+
+            // 4. Render Revenue Chart
+            const revenueCtx = document.getElementById('revenueChart');
+            if (revenueCtx) {
+                revenueChartInstance = new Chart(revenueCtx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Виручка (₴)',
+                            data: revenueData,
+                            borderColor: 'var(--secondary)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.2
+                        }]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        scales: { 
+                            y: { beginAtZero: true },
+                            x: { reverse: true } // Для відображення хронологічно
+                        } 
+                    }
+                });
+            }
+
+            // 5. Render Top Perfume Chart
+            const topPerfumeCtx = document.getElementById('topPerfumeChart');
+            if (topPerfumeCtx) {
+                topPerfumeChartInstance = new Chart(topPerfumeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: perfumeLabels,
+                        datasets: [{
+                            label: 'Обсяг продажу (мл)',
+                            data: perfumeData,
+                            backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#6B7280'],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                });
+            }
+        }
+        // ----------------------------------------------------------------------
+
+
+        // CRM Logic (Original)
         window.showClientHistory = function() {
              const name = document.getElementById('clientSearchInput').value.toLowerCase().trim();
              if (!name) return;
              const trs = getTransactions().filter(t => t.clientName.toLowerCase() === name);
              
-             let totalRevenue = trs.reduce((a,b) => a+(parseFloat(b.revenue) || 0), 0);
-             let totalProfit = trs.reduce((a,b) => a+(parseFloat(b.profit) || 0), 0);
+             let totalRevenue = trs.reduce((a,b) => a+b.revenue, 0);
+             let totalProfit = trs.reduce((a,b) => a+b.profit, 0);
              
-             document.getElementById('clientCrmSummary').innerHTML = `<div class="card stat-card" style="background: linear-gradient(135deg, var(--secondary), #059669);"><h3 style="color:white; margin-bottom: 5px;">Покупок: ${trs.length}</h3><h3 style="color:white;">Загальна виручка: ${totalRevenue.toFixed(2)} ₴</h3></div>`;
+             document.getElementById('clientCrmSummary').innerHTML = `<div class="stat-card green" style="background: var(--primary);"><h3 style="color:white; margin-bottom: 5px;">Покупок: ${trs.length}</h3><h3 style="color:white;">Загальна виручка: ${totalRevenue.toFixed(2)} ₴</h3></div>`;
              
              const tb = document.querySelector('#client-history-table tbody'); tb.innerHTML = '';
-             trs.sort((a,b) => b.timestamp - a.timestamp).forEach(t => tb.innerHTML += `<tr><td>${new Date(t.timestamp).toLocaleDateString()}</td><td>${t.perfumeName} (${t.quantityML} мл)</td><td class=\"text-right\">${(parseFloat(t.revenue) || 0).toFixed(2)} ₴</td><td class=\"text-right ${(parseFloat(t.profit) || 0) >= 0 ? 'text-success' : 'text-danger'}\">${(parseFloat(t.profit) || 0).toFixed(2)} ₴</td></tr>`);
-        }
-        
-        window.calculatePrice = function() {
-            const name = document.getElementById('calcPerfumeName').value.trim();
-            const vol = parseFloat(document.getElementById('calcFlaconVolume').value);
-            const markup = document.getElementById('calcMarkupTier').value;
-
-            if(!name || isNaN(vol) || !markup) {
-                document.getElementById('calculatorOutput').innerHTML = '<p class="text-danger">Виберіть парфум, об\'єм та націнку.</p>';
-                return;
-            }
-
-            const calc = calculateCost(name, vol, markup);
-            if(!calc) {
-                document.getElementById('calculatorOutput').innerHTML = '<p class="text-danger">Парфум не знайдено в базі.</p>';
-                return;
-            }
-            
-            const pData = PERFUME_PRICES[name];
-            const pricePerML = (vol >= pData.discountVolume) ? pData.discountPrice : pData.basePrice;
-            const flaconCost = FLACON_COSTS[vol];
-            const markupValue = MARKUP_PRESETS[markup];
-            const retailPricePerML = pData.basePrice * (1 + markupValue);
-
-
-            const output = `
-                <div class="card" style="border-left: 5px solid var(--primary);">
-                    <h4>Результат Розрахунку:</h4>
-                    <p>Ціна для клієнта (фінальна): <strong class="text-bold text-success">${calc.revenue.toFixed(2)} ₴</strong></p>
-                    <p>Валовий Прибуток: <strong class="text-bold">${calc.profit.toFixed(2)} ₴</strong></p>
-                    <hr>
-                    <p style="font-size: 0.9em; color: #6B7280;">
-                        С/С парфуму: ${pricePerML.toFixed(2)} ₴/мл <br>
-                        Націнка (${(markupValue*100).toFixed(0)}%): ${(retailPricePerML - pData.basePrice).toFixed(2)} ₴/мл<br>
-                        Вартість флакону: ${flaconCost.toFixed(2)} ₴
-                    </p>
-                </div>
-            `;
-            document.getElementById('calculatorOutput').innerHTML = output;
+             trs.sort((a,b) => b.timestamp - a.timestamp).forEach(t => tb.innerHTML += `<tr><td>${new Date(t.timestamp).toLocaleDateString()}</td><td>${t.perfumeName} (${t.quantityML} мл)</td><td class="text-right">${t.revenue.toFixed(2)} ₴</td><td class="text-right ${t.profit >= 0 ? 'text-success' : 'text-danger'}">${t.profit.toFixed(1)}</td></tr>`);
         }
 
-        window.generatePriceList = function() {
-            const markupKey = document.getElementById('priceListMarkup').value;
-            const markup = MARKUP_PRESETS[markupKey];
-            let priceListText = `✨ ПРАЙС-ЛИСТ (Націнка: ${markupKey})\n\n`;
 
-            Object.keys(PERFUME_PRICES).sort().forEach(name => {
-                const pData = PERFUME_PRICES[name];
-                const retailPricePerML = pData.basePrice * (1 + markup);
-                priceListText += `**${name}**: ${retailPricePerML.toFixed(2)} ₴/мл\n`;
-            });
-
-            document.getElementById('priceListOutput').value = priceListText;
-            showToast("Прайс-лист сформовано.", "success");
-        }
-        
-        // --- BACKUP & RESTORE LOGIC (FILE) ---
-        
-        window.exportDataToJSON = function() {
-            const data = {
-                metadata: {
-                    version: "PerfumeFlow Pro v14.0", // UPDATED VERSION
-                    exportDate: new Date().toISOString()
-                },
-                perfumePrices: PERFUME_PRICES,
-                flaconCosts: FLACON_COSTS,
-                flaconVolumes: FLACON_VOLUMES,
-                markupPresets: MARKUP_PRESETS,
-                salesSources: SALES_SOURCES,
-                transactions: getTransactions(),
-                expenses: getExpenses(),
-                perfumeStock: PERFUME_STOCK,
-                tasks: getTasks()
-            };
-            
-            const jsonString = JSON.stringify(data, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `perfumeflow_backup_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            
-            showToast("Дані збережено у файл!", "success");
-        }
-
-        window.importDataFromJSON = function() {
-            const fileInput = document.getElementById('importFileInput');
-            if (!fileInput.files.length) {
-                showToast("Виберіть файл для імпорту.", "error");
-                return;
-            }
-
-            if (!confirm("Увага! Всі поточні дані будуть ЗАМІНЕНІ даними з файлу. Продовжити?")) {
-                fileInput.value = '';
-                return;
-            }
-
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-
-            reader.onload = function(event) {
-                try {
-                    const data = JSON.parse(event.target.result);
-                    
-                    if (!data.perfumePrices || !data.transactions || !data.flaconCosts) {
-                        showToast("Некоректний формат файлу бек-апу. Відсутні ключові дані.", "error");
-                        fileInput.value = '';
-                        return;
-                    }
-
-                    // Perform the actual data update
-                    updateLocalData(data);
-                    
-                    showToast("✅ Дані успішно завантажено та відновлено!", "success");
-                    fileInput.value = ''; // Clear file input
-                } catch (e) {
-                    console.error("Import Error:", e);
-                    showToast("Помилка обробки файлу JSON: " + e.message, "error");
-                    fileInput.value = '';
-                }
-            };
-
-            reader.onerror = function() {
-                showToast("Помилка читання файлу.", "error");
-                fileInput.value = '';
-            };
-
-            reader.readAsText(file);
-        }
-        
-        // Helper function to update all data and re-render UI (used by both file and text import)
-        function updateLocalData(data) {
-            // Update LocalStorage
-            localStorage.setItem(CONFIG_KEYS.PRICES, JSON.stringify(data.perfumePrices || INITIAL_PRICES));
-            localStorage.setItem(CONFIG_KEYS.FLACONS, JSON.stringify(data.flaconCosts || FLACON_COSTS));
-            localStorage.setItem(CONFIG_KEYS.VOLUMES, JSON.stringify(data.flaconVolumes || FLACON_VOLUMES));
-            localStorage.setItem(CONFIG_KEYS.MARKUPS, JSON.stringify(data.markupPresets || MARKUP_PRESETS));
-            localStorage.setItem(CONFIG_KEYS.SOURCES, JSON.stringify(data.salesSources || SALES_SOURCES));
-            localStorage.setItem(CONFIG_KEYS.TRANSACTIONS, JSON.stringify(data.transactions || []));
-            localStorage.setItem(CONFIG_KEYS.EXPENSES, JSON.stringify(data.expenses || []));
-            localStorage.setItem(CONFIG_KEYS.INVENTORY, JSON.stringify(data.perfumeStock || {})); 
-            localStorage.setItem(CONFIG_KEYS.TASKS, JSON.stringify(data.tasks || []));
-
-            // Reload In-Memory Data and UI
-            loadPerfumePrices();
-            loadFlaconData();
-            loadMarkupPresets();
-            loadSalesSources();
-            loadInventory(); 
-            
-            populateFormOptions();
-            renderTransactionHistory();
-            renderPerfumeList();
-            renderInventoryList(); 
-            renderExpenseList(); 
-            renderTasks();
-            updateDashboard();
-        }
-
-        // --- SYNC MODAL FUNCTIONS (Copy/Paste) ---
-        window.showSyncDataModal = function() {
-            const data = {
-                perfumePrices: PERFUME_PRICES,
-                flaconCosts: FLACON_COSTS,
-                flaconVolumes: FLACON_VOLUMES,
-                markupPresets: MARKUP_PRESETS,
-                salesSources: SALES_SOURCES,
-                transactions: getTransactions(),
-                expenses: getExpenses(),
-                perfumeStock: PERFUME_STOCK,
-                tasks: getTasks()
-            };
-            const jsonString = JSON.stringify(data);
-            document.getElementById('syncDataOutput').value = jsonString;
-            document.getElementById('syncDataInput').value = ''; 
-            document.getElementById('syncModal').classList.add('active');
-        }
-
-        window.closeSyncModal = function() {
-            document.getElementById('syncModal').classList.remove('active');
-        }
-
-        window.copySyncData = function() {
-            const outputEl = document.getElementById('syncDataOutput');
-            if (outputEl.value) {
-                outputEl.select();
-                navigator.clipboard.writeText(outputEl.value).then(() => {
-                    showToast("✅ Дані скопійовано!", "success");
-                }).catch(err => {
-                    showToast("Помилка копіювання. Спробуйте вручну.", "error");
-                });
-            }
-        }
-        
-        window.importDataFromSync = function() {
-             const jsonString = document.getElementById('syncDataInput').value.trim();
-             if (!jsonString) {
-                showToast("Вставте дані для відновлення.", "error");
-                return;
-            }
-            
-            if (!confirm("Увага! Всі поточні дані будуть ЗАМІНЕНІ даними з тексту. Продовжити?")) {
-                return;
-            }
-            
-            try {
-                const data = JSON.parse(jsonString);
-                
-                if (!data.perfumePrices || !data.transactions || !data.flaconCosts) {
-                    showToast("Некоректний формат даних. Відсутні ключові поля.", "error");
-                    return;
-                }
-                
-                updateLocalData(data);
-
-                showToast("✅ Дані успішно відновлено з тексту!", "success");
-                closeSyncModal();
-            } catch (e) {
-                console.error("Import Error:", e);
-                showToast("Помилка обробки даних JSON: " + e.message, "error");
-            }
-        }
-        
-        // MODAL FUNCTIONS (Receipt)
-        function generateReceiptHTML(items, total, client, ttn = null) {
-             let html = `
+        // --- MODAL RECEIPT ---
+        function generateReceiptHTML(orderItems, totalRounded, clientName) {
+            let html = `
                 <div class="modal-header">
-                    <h3 style="margin:0">Чек / Замовлення</h3>
-                    <button class="btn-sm no-print" style="width:auto" onclick="closeReceiptModal()">✕</button>
+                    <h3 style="margin:0">Чек</h3>
+                    <button class="btn-sm no-print" style="width:auto; background: none; color: var(--dark);" onclick="closeReceiptModal()">✕</button>
                 </div>
                 <div class="modal-body">
                     <p><strong>Дата:</strong> ${new Date().toLocaleString('uk-UA')}</p>
-                    <p><strong>Клієнт:</strong> ${client || 'Гість'}</p>
-                    ${ttn ? `<p><strong>ТТН:</strong> <a href="https://novaposhta.ua/tracking/?cargo_key=${ttn}" target="_blank" style="color: var(--primary); font-weight: 600;">${ttn}</a></p>` : ''}
+                    <p><strong>Клієнт:</strong> ${clientName || 'Гість'}</p>
                     <table style="width:100%; border-top:1px solid #eee; margin-top:10px;">
-                        <thead><tr><th style="padding:5px 0; text-align: left;">Товар</th><th style="padding:5px 0; text-align: right;">Сума</th></tr></thead>
-                        <tbody>
             `;
-            items.forEach(i => {
-                html += `<tr><td style="padding:5px 0">${i.perfumeName} (${i.quantityML} мл)</td><td class="text-right">${(parseFloat(i.revenue) || 0).toFixed(2)} ₴</td></tr>`;
+            orderItems.forEach(i => {
+                html += `<tr><td style="padding:5px 0">${i.perfumeName} (${i.quantityML} мл)</td><td class="text-right">${i.revenue.toFixed(2)} ₴</td></tr>`;
             });
             html += `
-                        </tbody>
                     </table>
-                    <div class="receipt-total">До сплати: ${total} ₴</div> 
-                    <p style="text-align: center; margin-top: 20px; font-size: 0.9rem; color: #6B7280;" class="no-print">
-                        Дякуємо за замовлення!
-                    </p>
+                    <div class="receipt-total">До сплати: ${totalRounded.toFixed(2)} ₴</div>
+                </div>
+                <div class="no-print admin-buttons-group" style="margin-top: 20px; text-align: center; display: flex; gap: 10px; padding: 0 20px 20px 20px;">
+                    <button onclick="window.print()" style="background-color: var(--secondary); flex-grow: 1;"><i class="fa-solid fa-print"></i> Друк</button>
+                    <button onclick="closeReceiptModal()" style="background-color: #6c757d; flex-grow: 1;">Закрити</button>
                 </div>
             `;
             return html;
         }
-
-        function showModalReceipt(orderItems, totalRounded, clientName, ttn = null) {
+        
+        function showModalReceipt(orderItems, totalRounded, clientName) {
             const modal = document.getElementById('receiptModal');
             const content = document.getElementById('receiptContent');
-            content.innerHTML = generateReceiptHTML(orderItems, totalRounded, clientName, ttn);
-            modal.classList.add('active');
+            content.innerHTML = generateReceiptHTML(orderItems, totalRounded, clientName);
+            modal.style.display = 'block'; // Змінено на style.display = 'block'
+        }
+        
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').style.display = 'none'; // Змінено на style.display = 'none'
         }
 
-        window.closeReceiptModal = function() {
-            document.getElementById('receiptModal').classList.remove('active');
-        }
 
-        // --- INITIALIZATION ---
+        // Запуск ініціалізації при завантаженні сторінки
         document.addEventListener('DOMContentLoaded', () => {
             loadPerfumePrices(); 
             loadFlaconData(); 
             loadMarkupPresets(); 
             loadSalesSources(); 
-            loadInventory(); 
-            TASKS = getTasks(); // Load tasks
-
+            
             populateFormOptions();
             renderExpenseList(); 
             
-            const dashboardBtn = document.querySelector('.nav-btn');
-            showSection('dashboard', dashboardBtn);
+            showSection('dashboard', document.querySelector('.nav-btn.active')); // Змінено на 'dashboard'
             renderOrderList(); 
-            updateDashboard(); 
+            updateDashboard();
         });
     </script>
 </body>
