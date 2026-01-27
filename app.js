@@ -60,7 +60,15 @@ window.checkClientLoyalty = function (input) {
     if (!name) return;
     const stats = getClientStats(name);
     if (stats.discount > 0) {
-        showToast(`🌟 Клієнт: ${stats.level} (Знижка ${(stats.discount * 100).toFixed(0)}%)`, 'success');
+        showToast(`🌟 Клієнт: ${stats.level} (Витрати: ${stats.totalSpend} ₴)`, 'success');
+        const discountSelect = document.getElementById('discountSelectOrder');
+        if (discountSelect) {
+            discountSelect.style.borderColor = 'var(--secondary)';
+            discountSelect.style.boxShadow = '0 0 10px rgba(16, 185, 129, 0.4)';
+            // Auto-suggest max discount based on logic or just highlight? User asked to "choose", so we just highlight.
+            // But we can suggest:
+            // discountSelect.value = (stats.discount * 100).toFixed(0); 
+        }
     }
 }
 
@@ -359,41 +367,26 @@ function populateFormOptions() {
 }
 
 // --- ORDER ACTIONS ---
-window.addSale = function () {
-    const name = document.getElementById('perfumeName').value.trim();
-    const volume = parseFloat(document.getElementById('flaconVolume').value);
-    const markupTier = document.getElementById('saleMarkupTierSingle').value;
-    const source = document.getElementById('saleSourceSingle').value;
-    const client = document.getElementById('clientNameSingle').value.trim() || 'Гість';
-    const phone = document.getElementById('phoneSingle').value.trim();
-    const fullName = document.getElementById('fullNameSingle').value.trim();
-    const city = document.getElementById('citySingle').value.trim();
-    const postOffice = document.getElementById('postOfficeSingle').value.trim();
-    const comments = document.getElementById('commentsSingle').value.trim();
-    if (!name || !volume || !source) { showToast("Заповніть поля!", "error"); return; }
-    const calc = calculateCost(name, volume, markupTier);
-    if (!calc) { showToast("Парфум не знайдено!", "error"); return; }
-    const tx = {
-        id: Date.now(), timestamp: Date.now(), clientName: client, source: source, markupTier: markupTier, perfumeName: name, quantityML: volume,
-        revenue: calc.revenue, profit: calc.profit, costTotal: calc.costTotal
-    };
-    const txs = getTransactions(); txs.push(tx); saveTransactions(txs);
-    PERFUME_STOCK[name] = (PERFUME_STOCK[name] || 0) - volume; saveInventory();
-    addTask(`Продаж: ${name} (${volume} мл)`, 'sale', tx.id, client, phone, city, postOffice, fullName, comments);
-    showToast(`Продано! Прибуток: ${calc.profit.toFixed(0)} ₴`, "success");
-    document.getElementById('perfumeName').value = ''; updateDashboard();
-}
+// REMOVED: addSale function
 
 window.addItemToOrder = function () {
     const name = document.getElementById('orderPerfumeName').value.trim();
     const volume = parseFloat(document.getElementById('orderFlaconVolume').value);
     const markup = document.getElementById('saleMarkupTierOrder').value;
+    // Recalculate whole list to update total with discount?
+    // Actually we update totals in renderOrderList
     if (!name || !volume) return;
     const calc = calculateCost(name, volume, markup);
     if (!calc) return;
     CURRENT_ORDER_LIST.push({ ...calc, name: name, vol: volume, markup: markup });
     renderOrderList(); document.getElementById('orderPerfumeName').value = '';
 }
+// Add listener to discount change
+document.addEventListener('DOMContentLoaded', () => {
+    const ds = document.getElementById('discountSelectOrder');
+    if (ds) ds.addEventListener('change', renderOrderList);
+});
+
 window.removeItemFromOrder = function (index) { CURRENT_ORDER_LIST.splice(index, 1); renderOrderList(); }
 
 window.renderOrderList = function () {
@@ -413,13 +406,21 @@ window.renderOrderList = function () {
 
     // CLEAN ORDER TEXT
     if (CURRENT_ORDER_LIST.length > 0) {
+        const discountPercent = parseInt(document.getElementById('discountSelectOrder').value) || 0;
+        const discountAmount = totalRev * (discountPercent / 100);
+        const finalTotal = totalRev - discountAmount;
+
         let text = "Ваше замовлення:\n\n";
         CURRENT_ORDER_LIST.forEach((item, i) => { text += `${i + 1}. ${item.name} (${item.vol} мл) — ${item.revenue.toFixed(0)} грн\n`; });
+        if (discountPercent > 0) {
+            text += `\nЗнижка ${discountPercent}%: -${discountAmount.toFixed(0)} грн\n`;
+        }
         text += `\n${MY_DELIVERY_INFO}\n\n`;
         text += `${MY_PAYMENT_INFO}\n\n`;
-        text += `До сплати: ${totalRev.toFixed(0)} грн`;
+        text += `До сплати: ${finalTotal.toFixed(0)} грн`;
         summaryText.value = text;
-    } else { summaryText.value = ''; }
+        totalDiv.innerHTML = `Сума: ${totalRev.toFixed(0)} ₴ <br> ${discountPercent > 0 ? `<span style='color:var(--secondary)'>Знижка: -${discountAmount.toFixed(0)} ₴</span> <br>` : ''} Разом: ${finalTotal.toFixed(0)} ₴`;
+    } else { summaryText.value = ''; totalDiv.textContent = ''; }
 }
 
 window.clearOrder = function () { CURRENT_ORDER_LIST = []; renderOrderList(); IS_EDITING_ORDER = null; const btn = document.getElementById('processOrderBtn'); btn.innerHTML = '<i class="fa-solid fa-cash-register"></i> Оформити'; btn.classList.remove('btn-warning'); btn.classList.add('btn-success'); }
@@ -454,6 +455,13 @@ window.startEditOrder = function (orderId) {
         document.getElementById('cityOrder').value = task.city;
         document.getElementById('postOfficeOrder').value = task.postOffice;
     }
+    // Restore discount if available in transaction
+    const firstTx = txs[0];
+    if (firstTx.discountPercent) {
+        document.getElementById('discountSelectOrder').value = firstTx.discountPercent;
+    } else {
+        document.getElementById('discountSelectOrder').value = 0;
+    }
     renderOrderList();
     const btn = document.getElementById('processOrderBtn');
     btn.innerHTML = '<i class="fa-solid fa-save"></i> Зберегти';
@@ -476,11 +484,21 @@ window.processOrder = function () {
     const txs = getTransactions();
     const total = CURRENT_ORDER_LIST.reduce((acc, item) => acc + item.revenue, 0);
     const orderId = IS_EDITING_ORDER || Date.now();
-    const newTransactions = CURRENT_ORDER_LIST.map(item => ({
-        id: Date.now() + Math.random(), timestamp: Date.now(), clientName: client, source: source, markupTier: markup,
-        perfumeName: item.name, quantityML: item.vol, revenue: item.revenue, profit: item.profit, costTotal: item.costTotal,
-        ttnNumber: ttn, orderId: orderId
-    }));
+    const discountPercent = parseInt(document.getElementById('discountSelectOrder').value) || 0;
+
+    // Apply discount proportionally to each item to correct profit/rev stats
+    const newTransactions = CURRENT_ORDER_LIST.map(item => {
+        const itemDiscount = item.revenue * (discountPercent / 100);
+        const finalRevenue = item.revenue - itemDiscount;
+        const finalProfit = finalRevenue - item.costTotal; // Profit reduces by discount amount
+
+        return {
+            id: Date.now() + Math.random(), timestamp: Date.now(), clientName: client, source: source, markupTier: markup,
+            perfumeName: item.name, quantityML: item.vol,
+            revenue: finalRevenue, profit: finalProfit, costTotal: item.costTotal,
+            ttnNumber: ttn, orderId: orderId, discountPercent: discountPercent
+        };
+    });
     txs.push(...newTransactions); saveTransactions(txs);
     let totalVolume = {};
     CURRENT_ORDER_LIST.forEach(item => { totalVolume[item.name] = (totalVolume[item.name] || 0) + item.vol; });
@@ -489,7 +507,7 @@ window.processOrder = function () {
     const itemSummary = CURRENT_ORDER_LIST.map(item => `${item.name} (${item.vol}ml)`).join(', ');
     addTask(`Відправка: ${client} - ${itemSummary}`, 'order', orderId, client, phone, city, postOffice, fullName, comments);
     showToast(`✅ Замовлення збережено!`, "success");
-    showModalReceipt(CURRENT_ORDER_LIST, total, client, ttn);
+    showModalReceipt(CURRENT_ORDER_LIST, total, client, ttn, discountPercent);
     clearOrder(); updateDashboard();
 }
 
@@ -710,14 +728,29 @@ window.showClientHistory = function () {
 }
 
 // --- MODAL UTILS ---
-function generateReceiptHTML(orderItems, totalRounded, clientName, ttn = null) {
-    const total = totalRounded.toFixed(2); const date = new Date().toLocaleDateString('uk-UA');
+function generateReceiptHTML(orderItems, totalOriginal, clientName, ttn = null, discount = 0) {
+    const total = totalOriginal.toFixed(2);
+    const discountAmount = totalOriginal * (discount / 100);
+    const finalTotal = totalOriginal - discountAmount;
+    const date = new Date().toLocaleDateString('uk-UA');
+
     const itemsHtml = orderItems.map((item, index) => `<p style="margin: 5px 0; display: flex; justify-content: space-between; font-size: 0.95rem;"><span>${index + 1}. ${item.name} (${item.vol} мл)</span><span class="text-bold">${item.revenue.toFixed(2)} ₴</span></p>`).join('');
     const ttnDisplay = ttn ? `<p style="margin: 10px 0; font-weight: 600;">📦 ТТН: ${ttn}</p>` : '';
-    return `<div style="max-width: 300px; margin: 0 auto; padding: 15px; border: 1px dashed var(--border); border-radius: 5px; font-family: monospace; color: var(--text-main);"><h3 style="text-align: center; margin-bottom: 5px; color: var(--primary);">PerfumeFlow</h3><p style="text-align: center; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 5px; font-size: 0.85rem;">Дата: ${date} | Клієнт: ${clientName}</p>${itemsHtml}${ttnDisplay}<div class="receipt-total">До сплати: ${total} ₴</div><p style="text-align: center; margin-top: 20px; font-size: 0.9rem; color: var(--text-muted);" class="no-print">Дякуємо!</p><div class="no-print admin-buttons-group" style="margin-top: 20px; text-align: center; display: flex; gap: 10px;"><button onclick="window.print()" style="background-color: var(--secondary); flex-grow: 1; color: white; border: none; border-radius: 4px; padding: 8px;">🖨️ Друк</button><button onclick="closeReceiptModal()" style="background-color: var(--text-muted); flex-grow: 1; color: white; border: none; border-radius: 4px; padding: 8px;">Закрити</button></div></div>`;
+
+    let totalsHtml = `<div class="receipt-total">До сплати: ${finalTotal.toFixed(2)} ₴</div>`;
+    if (discount > 0) {
+        totalsHtml = `
+            <div style="border-top: 2px dashed var(--border); margin-top:15px; padding-top:10px; text-align:right;">
+                <p>Сума: ${totalOriginal.toFixed(2)} ₴</p>
+                <p style="color:var(--secondary);">Знижка (${discount}%): -${discountAmount.toFixed(2)} ₴</p>
+                <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-top:5px;">Разом: ${finalTotal.toFixed(2)} ₴</div>
+            </div>`;
+    }
+
+    return `<div style="max-width: 300px; margin: 0 auto; padding: 15px; border: 1px dashed var(--border); border-radius: 5px; font-family: monospace; color: var(--text-main);"><h3 style="text-align: center; margin-bottom: 5px; color: var(--primary);">PerfumeFlow</h3><p style="text-align: center; margin-bottom: 15px; border-bottom: 1px dashed var(--border); padding-bottom: 5px; font-size: 0.85rem;">Дата: ${date} | Клієнт: ${clientName}</p>${itemsHtml}${ttnDisplay}${totalsHtml}<p style="text-align: center; margin-top: 20px; font-size: 0.9rem; color: var(--text-muted);" class="no-print">Дякуємо!</p><div class="no-print admin-buttons-group" style="margin-top: 20px; text-align: center; display: flex; gap: 10px;"><button onclick="window.print()" style="background-color: var(--secondary); flex-grow: 1; color: white; border: none; border-radius: 4px; padding: 8px;">🖨️ Друк</button><button onclick="closeReceiptModal()" style="background-color: var(--text-muted); flex-grow: 1; color: white; border: none; border-radius: 4px; padding: 8px;">Закрити</button></div></div>`;
 }
-function showModalReceipt(orderItems, totalRounded, clientName, ttn = null) {
-    document.getElementById('receiptContent').innerHTML = generateReceiptHTML(orderItems, totalRounded, clientName, ttn);
+function showModalReceipt(orderItems, totalRounded, clientName, ttn = null, discount = 0) {
+    document.getElementById('receiptContent').innerHTML = generateReceiptHTML(orderItems, totalRounded, clientName, ttn, discount);
     document.getElementById('receiptModal').classList.add('active');
 }
 window.closeReceiptModal = function () { document.getElementById('receiptModal').classList.remove('active'); }
@@ -798,6 +831,7 @@ window.saveApiKey = function (key) { localStorage.setItem('openai_api_key', key.
 window.smartParseAI = async function (mode = 'single') {
     const inputId = mode === 'order' ? 'pasteAreaOrder' : 'pasteArea';
     const text = document.getElementById(inputId).value;
+    // ... existing AI logic placeholder ...
     const apiKey = localStorage.getItem('openai_api_key');
 
     if (!text) { showToast("⚠️ Спочатку вставте текст!", "warning"); return; }
@@ -908,7 +942,6 @@ window.smartParseAI = async function (mode = 'single') {
             const input = mode === 'order' ? document.getElementById('clientNameOrder') : document.getElementById('clientNameSingle');
             checkClientLoyalty(input);
         }
-
     } catch (err) {
         console.error(err);
         if (err.message.includes("Incorrect API key")) {
@@ -919,6 +952,117 @@ window.smartParseAI = async function (mode = 'single') {
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
+    }
+}
+
+// ==========================================
+//  SUPABASE INTEGRATION
+// ==========================================
+let supabaseClient = null;
+
+function getSupabaseConfig() {
+    return {
+        url: localStorage.getItem('supabase_url') || 'https://oxxzlqwnssivwzhalojw.supabase.co',
+        key: localStorage.getItem('supabase_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im94eHpscXduc3Npdnd6aGFsb2p3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NDU0MjgsImV4cCI6MjA4NTAyMTQyOH0.NsAb_R46ziufVT_5tqqTW9RntLkCdKDjzvd5m234_us'
+    };
+}
+window.saveSupabaseConfig = function () {
+    const url = document.getElementById('supabaseUrlInput').value.trim();
+    const key = document.getElementById('supabaseKeyInput').value.trim();
+    if (url) localStorage.setItem('supabase_url', url);
+    if (key) localStorage.setItem('supabase_key', key);
+    initSupabase();
+}
+
+function initSupabase() {
+    const config = getSupabaseConfig();
+    if (config.url && config.key && window.supabase) {
+        try {
+            supabaseClient = window.supabase.createClient(config.url, config.key);
+            console.log("Supabase Client Initialized");
+        } catch (e) {
+            console.error("Supabase Init Error", e);
+        }
+    }
+    // Populate inputs
+    if (document.getElementById('supabaseUrlInput')) {
+        document.getElementById('supabaseUrlInput').value = config.url || '';
+        document.getElementById('supabaseKeyInput').value = config.key || '';
+    }
+}
+
+// Call init on load
+document.addEventListener('DOMContentLoaded', initSupabase);
+
+window.testSupabaseConnection = async function () {
+    if (!supabaseClient) { initSupabase(); }
+    if (!supabaseClient) { showToast("⚠️ Спочатку введіть URL та Key!", "error"); return; }
+
+    showToast("🔄 Перевірка...", "primary");
+
+    // Try to select from a table named 'app_data' (we assume it exists, or we check connection by simple query)
+    // Actually, just checking if we can query anything.
+    const { data, error } = await supabaseClient.from('app_data').select('count', { count: 'exact', head: true });
+
+    if (error) {
+        // If error is 404/PGRST204 (table not found), connection works but table is missing.
+        if (error.code === '42P01') {
+            showToast("✅ З'єднання є! (Але таблиця app_data не створена)", "warning");
+        } else {
+            showToast(`❌ Помилка: ${error.message}`, "error");
+        }
+    } else {
+        showToast("✅ З'єднання успішне!", "success");
+    }
+}
+
+window.syncWithCloud = async function () {
+    if (!supabaseClient) { showToast("⚠️ Налаштуйте Supabase!", "error"); return; }
+
+    if (!confirm("Це синхронізує ваші дані з хмарою. Продовжити?")) return;
+
+    showToast("🔄 Синхронізація...", "primary");
+
+    // 1. Prepare Local Data
+    const allData = {};
+    Object.values(CONFIG_KEYS).forEach(key => {
+        allData[key] = JSON.parse(localStorage.getItem(key) || 'null');
+    });
+
+    // 2. Upload (Upsert) - We use a fixed ID=1 for this user for simplicity
+    const { data, error } = await supabaseClient
+        .from('app_data')
+        .upsert({ id: 1, json_data: allData, updated_at: new Date() })
+        .select();
+
+    if (error) {
+        showToast(`❌ Помилка вивантаження: ${error.message}`, "error");
+        return;
+    }
+
+    showToast("✅ Дані збережено в хмару!", "success");
+}
+
+window.loadFromCloud = async function () {
+    if (!supabaseClient) { showToast("⚠️ Налаштуйте Supabase!", "error"); return; }
+
+    if (!confirm("⚠️ УВАГА: Це замінить локальні дані даними з хмари!")) return;
+
+    const { data, error } = await supabaseClient
+        .from('app_data')
+        .select('json_data')
+        .eq('id', 1)
+        .single();
+
+    if (error) { showToast("❌ Помилка завантаження", "error"); return; }
+
+    if (data && data.json_data) {
+        const cloudData = data.json_data;
+        Object.keys(cloudData).forEach(key => {
+            if (cloudData[key]) localStorage.setItem(key, JSON.stringify(cloudData[key]));
+        });
+        showToast("✅ Дані відновлено! Оновлення...", "success");
+        setTimeout(() => location.reload(), 1500);
     }
 }
 
