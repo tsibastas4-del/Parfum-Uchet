@@ -811,7 +811,7 @@ window.importDataFromJSON = function () {
             }
         } catch (err) {
             console.error(err);
-            showToast("❌ Помилка читання файлу (Невірний формат)", "error");
+            showToast(`❌ Помилка читання файлу: ${err.message}`, "error");
         }
     };
 
@@ -823,7 +823,20 @@ window.importDataFromJSON = function () {
 }
 
 // --- SETTINGS (AI API) ---
-window.openSettingsModal = function () { document.getElementById('settingsModal').classList.add('active'); document.getElementById('apiKeyInput').value = localStorage.getItem('openai_api_key') || ''; }
+window.openSettingsModal = function () {
+    document.getElementById('settingsModal').classList.add('active');
+    document.getElementById('apiKeyInput').value = localStorage.getItem('openai_api_key') || '';
+
+    // Load Supabase config
+    const config = getSupabaseConfig();
+    if (document.getElementById('supabaseUrlInput')) {
+        document.getElementById('supabaseUrlInput').value = config.url || '';
+        document.getElementById('supabaseKeyInput').value = config.key || '';
+    }
+
+    // Update sync status display
+    updateSyncStatus();
+}
 window.closeSettingsModal = function () { document.getElementById('settingsModal').classList.remove('active'); }
 window.saveApiKey = function (key) { localStorage.setItem('openai_api_key', key.trim()); showToast("Ключ збережено", "success"); }
 
@@ -994,78 +1007,278 @@ function initSupabase() {
 // Call init on load
 document.addEventListener('DOMContentLoaded', initSupabase);
 
+// Helper function to update sync status display
+function updateSyncStatus() {
+    const lastSync = localStorage.getItem('last_cloud_sync');
+    const lastRestore = localStorage.getItem('last_cloud_restore');
+
+    // This will be called when settings modal opens
+    const syncStatusEl = document.getElementById('syncStatusDisplay');
+    if (syncStatusEl && lastSync) {
+        const syncDate = new Date(lastSync);
+        const timeAgo = getTimeAgo(syncDate);
+        syncStatusEl.innerHTML = `<div style="margin-top: 10px; padding: 10px; background: rgba(16, 185, 129, 0.1); border-left: 3px solid var(--secondary); border-radius: 4px;">
+            <strong>✅ Остання синхронізація:</strong><br>
+            ${syncDate.toLocaleString('uk-UA')} (${timeAgo})
+        </div>`;
+    }
+
+    if (syncStatusEl && lastRestore) {
+        const restoreDate = new Date(lastRestore);
+        const timeAgo = getTimeAgo(restoreDate);
+        syncStatusEl.innerHTML += `<div style="margin-top: 5px; padding: 10px; background: rgba(79, 70, 229, 0.1); border-left: 3px solid var(--primary); border-radius: 4px;">
+            <strong>📥 Останнє відновлення:</strong><br>
+            ${restoreDate.toLocaleString('uk-UA')} (${timeAgo})
+        </div>`;
+    }
+}
+
+// Helper to calculate time ago
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+
+    if (seconds < 60) return 'щойно';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} хв тому`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} год тому`;
+    return `${Math.floor(seconds / 86400)} дн тому`;
+}
+
 window.testSupabaseConnection = async function () {
     if (!supabaseClient) { initSupabase(); }
     if (!supabaseClient) { showToast("⚠️ Спочатку введіть URL та Key!", "error"); return; }
 
-    showToast("🔄 Перевірка...", "primary");
+    showToast("🔄 Перевірка з'єднання...", "primary");
 
-    // Try to select from a table named 'app_data' (we assume it exists, or we check connection by simple query)
-    // Actually, just checking if we can query anything.
-    const { data, error } = await supabaseClient.from('app_data').select('count', { count: 'exact', head: true });
+    try {
+        // Try to select from a table named 'app_data'
+        const { data, error } = await supabaseClient
+            .from('app_data')
+            .select('count', { count: 'exact', head: true });
 
-    if (error) {
-        // If error is 404/PGRST204 (table not found), connection works but table is missing.
+        if (error) {
+            throw error;
+        }
+
+        showToast("✅ З'єднання успішне! Таблиця app_data знайдена.", "success");
+        console.log("✅ Supabase connection test successful");
+
+    } catch (error) {
+        console.error("❌ Connection test error:", error);
+
         if (error.code === '42P01') {
-            showToast("✅ З'єднання є! (Але таблиця app_data не створена)", "warning");
+            const msg = "⚠️ З'єднання працює, але таблиця app_data не знайдена!\n\nСтворіть таблицю:\n1. Supabase Dashboard → Table Editor\n2. New Table: app_data\n3. Колонки: id (int8), json_data (jsonb), updated_at (timestamp)";
+            alert(msg);
+            showToast("⚠️ Таблиця app_data не створена", "warning");
+        } else if (error.code === 'PGRST301') {
+            showToast("❌ Невірний URL або Key", "error");
+        } else if (error.message.includes('Failed to fetch')) {
+            showToast("❌ Не вдалося підключитися. Перевірте URL.", "error");
         } else {
             showToast(`❌ Помилка: ${error.message}`, "error");
         }
-    } else {
-        showToast("✅ З'єднання успішне!", "success");
     }
 }
 
+
 window.syncWithCloud = async function () {
-    if (!supabaseClient) { showToast("⚠️ Налаштуйте Supabase!", "error"); return; }
-
-    if (!confirm("Це синхронізує ваші дані з хмарою. Продовжити?")) return;
-
-    showToast("🔄 Синхронізація...", "primary");
-
-    // 1. Prepare Local Data
-    const allData = {};
-    Object.values(CONFIG_KEYS).forEach(key => {
-        allData[key] = JSON.parse(localStorage.getItem(key) || 'null');
-    });
-
-    // 2. Upload (Upsert) - We use a fixed ID=1 for this user for simplicity
-    const { data, error } = await supabaseClient
-        .from('app_data')
-        .upsert({ id: 1, json_data: allData, updated_at: new Date() })
-        .select();
-
-    if (error) {
-        showToast(`❌ Помилка вивантаження: ${error.message}`, "error");
+    if (!supabaseClient) {
+        showToast("⚠️ Налаштуйте Supabase!", "error");
         return;
     }
 
-    showToast("✅ Дані збережено в хмару!", "success");
-}
+    if (!confirm("Це синхронізує ваші дані з хмарою. Продовжити?")) return;
 
-window.loadFromCloud = async function () {
-    if (!supabaseClient) { showToast("⚠️ Налаштуйте Supabase!", "error"); return; }
+    showToast("🔄 Підготовка даних...", "primary");
 
-    if (!confirm("⚠️ УВАГА: Це замінить локальні дані даними з хмари!")) return;
+    try {
+        // 1. Prepare Local Data
+        const allData = {};
+        let totalSize = 0;
 
-    const { data, error } = await supabaseClient
-        .from('app_data')
-        .select('json_data')
-        .eq('id', 1)
-        .single();
-
-    if (error) { showToast("❌ Помилка завантаження", "error"); return; }
-
-    if (data && data.json_data) {
-        const cloudData = data.json_data;
-        Object.keys(cloudData).forEach(key => {
-            if (cloudData[key]) localStorage.setItem(key, JSON.stringify(cloudData[key]));
+        Object.values(CONFIG_KEYS).forEach(key => {
+            const item = localStorage.getItem(key);
+            if (item) {
+                try {
+                    // Try to parse as JSON first
+                    allData[key] = JSON.parse(item);
+                } catch (e) {
+                    // If parse fails, it's a plain string (like theme: 'dark')
+                    allData[key] = item;
+                }
+                totalSize += item.length;
+            } else {
+                allData[key] = null;
+            }
         });
-        showToast("✅ Дані відновлено! Оновлення...", "success");
-        setTimeout(() => location.reload(), 1500);
+
+        // 2. Validate data size (Supabase has limits)
+        const dataSizeMB = (totalSize / 1024 / 1024).toFixed(2);
+        console.log(`📊 Розмір даних для синхронізації: ${dataSizeMB} MB`);
+
+        if (totalSize > 10 * 1024 * 1024) { // 10MB limit
+            showToast(`⚠️ Дані занадто великі (${dataSizeMB} MB). Максимум 10 MB.`, "error");
+            return;
+        }
+
+        showToast("🔄 Відправка в хмару...", "primary");
+
+        // 3. Upload (Upsert) with Timeout (20s)
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout: Сервер не відповідає (20 сек)')), 20000)
+        );
+
+        const supabasePromise = supabaseClient
+            .from('app_data')
+            .upsert({
+                id: 1,
+                json_data: allData
+            })
+            .select();
+
+        const result = await Promise.race([supabasePromise, timeoutPromise]);
+
+        if (result.error) {
+            throw result.error;
+        }
+
+        // 4. Save sync timestamp
+        localStorage.setItem('last_cloud_sync', new Date().toISOString());
+
+        const syncTime = new Date().toLocaleString('uk-UA');
+        showToast(`✅ Дані збережено в хмару! (${syncTime})`, "success");
+        console.log("✅ Supabase Sync Success:", result.data);
+
+        // Update UI if sync status element exists
+        updateSyncStatus();
+
+    } catch (error) {
+        console.error("❌ Supabase Save Error:", error);
+
+        let errorMessage = "Невідома помилка";
+        let errorDetails = "";
+
+        // Parse different error types
+        if (error.message) {
+            errorMessage = error.message;
+        }
+
+        if (error.code === 'PGRST301') {
+            errorDetails = "\n\n💡 Можлива причина: Таблиця app_data не існує або має неправильну структуру.\n\nРішення:\n1. Перейдіть в Supabase Dashboard\n2. Table Editor → New Table\n3. Назва: app_data\n4. Колонки: id (int8), json_data (jsonb), updated_at (timestamp)";
+        } else if (error.code === '42501' || error.message.includes('permission')) {
+            errorDetails = "\n\n💡 Можлива причина: Row Level Security (RLS) блокує доступ.\n\nРішення:\n1. Supabase Dashboard → Authentication → Policies\n2. Вимкніть RLS для таблиці app_data\nАБО\n3. Додайте політику: ALLOW ALL для anon ролі";
+        } else if (error.code === 'TIMEOUT') {
+            errorDetails = "\n\n💡 Можлива причина: Повільне з'єднання або сервер не відповідає.\n\nРішення:\n1. Перевірте інтернет-з'єднання\n2. Спробуйте ще раз через хвилину";
+        } else if (error.code === '23505') {
+            errorDetails = "\n\n💡 Конфлікт даних. Спробуйте спочатку завантажити дані з хмари.";
+        }
+
+        const fullError = `❌ ПОМИЛКА СИНХРОНІЗАЦІЇ\n\nПовідомлення: ${errorMessage}\nКод: ${error.code || 'N/A'}${errorDetails}`;
+
+        alert(fullError);
+        showToast(`❌ Помилка: ${errorMessage}`, "error");
+
+        // Log full error for debugging
+        console.log("Full error object:", {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            status: error.status
+        });
     }
 }
 
+window.loadFromCloud = async function () {
+    if (!supabaseClient) {
+        showToast("⚠️ Налаштуйте Supabase!", "error");
+        return;
+    }
+
+    if (!confirm("⚠️ УВАГА: Це замінить локальні дані даними з хмари!\n\nПродовжити?")) return;
+
+    showToast("🔄 Завантаження з хмари...", "primary");
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('app_data')
+            .select('json_data')
+            .eq('id', 1)
+            .single();
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data || !data.json_data) {
+            showToast("⚠️ У хмарі немає збережених даних.", "warning");
+            return;
+        }
+
+        // Validate cloud data
+        const cloudData = data.json_data;
+        const cloudUpdateTime = new Date().toLocaleString('uk-UA');
+
+        console.log(`📥 Завантаження даних з хмари (оновлено: ${cloudUpdateTime})`);
+
+        // Check if cloud data is valid
+        let validKeys = 0;
+        Object.values(CONFIG_KEYS).forEach(key => {
+            if (cloudData[key] !== undefined && cloudData[key] !== null) {
+                validKeys++;
+            }
+        });
+
+        if (validKeys === 0) {
+            showToast("⚠️ Дані в хмарі порожні або пошкоджені.", "error");
+            return;
+        }
+
+        console.log(`✅ Знайдено ${validKeys} валідних ключів даних`);
+
+        // Restore data
+        Object.keys(cloudData).forEach(key => {
+            if (cloudData[key] !== null && cloudData[key] !== undefined) {
+                const value = cloudData[key];
+                // If value is already a string (like 'dark' or 'light'), store as-is
+                // Otherwise, stringify it (for objects/arrays)
+                if (typeof value === 'string') {
+                    localStorage.setItem(key, value);
+                } else {
+                    localStorage.setItem(key, JSON.stringify(value));
+                }
+            }
+        });
+
+        // Save restore timestamp
+        localStorage.setItem('last_cloud_restore', new Date().toISOString());
+
+        showToast(`✅ Дані відновлено з хмари! (${cloudUpdateTime})\n\nОновлення сторінки...`, "success");
+        setTimeout(() => location.reload(), 2000);
+
+    } catch (error) {
+        console.error("❌ Supabase Load Error:", error);
+
+        let errorMessage = "Невідома помилка";
+        let errorDetails = "";
+
+        if (error.code === 'PGRST116') {
+            errorMessage = "У хмарі немає збережених даних";
+            errorDetails = "\n\n💡 Спочатку збережіть дані в хмару, використовуючи кнопку 'Зберегти в хмару'.";
+        } else if (error.code === '42P01') {
+            errorMessage = "Таблиця app_data не існує";
+            errorDetails = "\n\n💡 Створіть таблицю app_data в Supabase Dashboard:\n1. Table Editor → New Table\n2. Назва: app_data\n3. Колонки: id (int8), json_data (jsonb), updated_at (timestamp)";
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        const fullError = `❌ ПОМИЛКА ЗАВАНТАЖЕННЯ\n\nПовідомлення: ${errorMessage}\nКод: ${error.code || 'N/A'}${errorDetails}`;
+
+        alert(fullError);
+        showToast(`❌ Помилка: ${errorMessage}`, "error");
+
+        console.log("Full error object:", error);
+    }
+}
 function renderDashboardCharts(transactions) {
     // 1. Prepare Sales Data (Last 30 Days)
     const daysMap = {};
