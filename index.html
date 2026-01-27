@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
 <body>
@@ -26,8 +27,6 @@
         <div class="navbar-links">
             <button class="nav-btn active" onclick="showSection('dashboard', this)"><i
                     class="fa-solid fa-chart-pie"></i> Головна</button>
-            <button class="nav-btn" onclick="showSection('input-form', this)"><i class="fa-solid fa-cart-plus"></i>
-                Продаж</button>
             <button class="nav-btn" onclick="showSection('multi-calculator', this)"><i
                     class="fa-solid fa-list-check"></i> Замовлення</button>
             <button class="nav-btn" onclick="showSection('transactions', this)"><i
@@ -95,8 +94,8 @@
                 <h3><i class="fa-solid fa-bolt"></i> Швидкі дії</h3>
                 <div class="grid-2-col">
                     <button class="btn-primary"
-                        onclick="showSection('input-form', document.querySelectorAll('.nav-btn')[1])"><i
-                            class="fa-solid fa-plus"></i> Новий продаж</button>
+                        onclick="showSection('multi-calculator', document.querySelectorAll('.nav-btn')[1])"><i
+                            class="fa-solid fa-plus"></i> Нове Замовлення</button>
                     <button class="btn-success"
                         onclick="showSection('tasks', document.querySelectorAll('.nav-btn')[4])"><i
                             class="fa-solid fa-clipboard-list"></i> Переглянути Задачі</button>
@@ -111,64 +110,7 @@
             </div>
         </section>
 
-        <section id="input-form" class="content-section">
-            <div class="card">
-                <h2><i class="fa-solid fa-bottle-droplet"></i> Швидкий продаж</h2>
-
-                <div class="parser-area">
-                    <label style="color: var(--primary);"><i class="fa-solid fa-wand-magic-sparkles"></i> Умная вставка
-                        (OLX, Viber, або назва парфуму)</label>
-                    <textarea id="pasteArea"
-                        placeholder="Вставте текст сюди (напр: 'Замовлення Sauvage 100мл 0661234567 Київ 5')..."
-                        rows="2"></textarea>
-                    <div style="display: flex; gap: 10px; margin-top: 5px;">
-                        <button class="btn-sm btn-primary" onclick="parseOrderText()">🪄 Розібрати текст</button>
-                        <button class="btn-sm btn-warning" onclick="document.getElementById('pasteArea').value=''">🗑
-                            Очистити</button>
-                    </div>
-                </div>
-
-                <div class="grid-3-col" style="margin-bottom: 15px;">
-                    <div><label>Націнка</label><select id="saleMarkupTierSingle"></select></div>
-                    <div><label>Джерело</label><select id="saleSourceSingle"></select></div>
-                    <div><label>Клієнт (опційно)</label><input type="text" id="clientNameSingle"
-                            placeholder="Введіть ім'я..." list="clientList" onchange="checkClientLoyalty(this)"></div>
-                </div>
-
-                <h3 style="margin-top: 20px;"><i class="fa-solid fa-truck-moving"></i> Реквізити (для Задач)</h3>
-                <div class="grid-2-col" style="margin-bottom: 15px;">
-                    <div><label>Номер телефону</label><input type="text" id="phoneSingle" placeholder="+380..."></div>
-                    <div><label>ПІБ (повністю)</label><input type="text" id="fullNameSingle"
-                            placeholder="Іванов Іван..."></div>
-                    <div><label>Місто</label><input type="text" id="citySingle" placeholder="Напр: Київ"></div>
-                    <div><label>Відділення НП</label><input type="text" id="postOfficeSingle"
-                            placeholder="№X або Адреса"></div>
-                </div>
-                <label>Коментар до замовлення</label>
-                <textarea id="commentsSingle" rows="2" placeholder="Напр: Скинути реквізити на Вайбер..."
-                    style="margin-bottom: 20px;"></textarea>
-                <label>Назва Парфуму</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <input type="text" id="perfumeName" list="perfumeList" placeholder="Почніть вводити назву...">
-                </div>
-                <div class="parser-area">
-                    <label>Вставити текст з месенджера:</label>
-                    <textarea id="pasteArea" placeholder="Вставте текст сюди..."></textarea>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <button class="btn-warning" onclick="parseOrderText()"><i class="fa-solid fa-magic"></i>
-                            Розібрати (RegEx)</button>
-                        <button class="btn-primary" onclick="smartParseAI()"
-                            style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                            <i class="fa-solid fa-robot"></i> AI Розбір
-                        </button>
-                    </div>
-                </div>
-                <label>Об'єм (мл)</label>
-                <select id="flaconVolume" style="margin-bottom: 20px;"></select>
-                <button class="btn-primary" onclick="addSale()"><i class="fa-solid fa-check"></i> Зафіксувати
-                    Продаж</button>
-            </div>
-        </section>
+        <!-- REMOVED: QUICK SALE SECTION (input-form) -->
 
         <section id="multi-calculator" class="content-section">
             <div class="card">
@@ -178,6 +120,17 @@
                     <div><label>Джерело</label><select id="saleSourceOrder"></select></div>
                     <div><label>Клієнт</label><input type="text" id="clientNameOrder" placeholder="Ім'я клієнта"
                             list="clientList" onchange="checkClientLoyalty(this)"></div>
+                    <div>
+                        <label>Знижка (%)</label>
+                        <select id="discountSelectOrder" style="border: 2px solid var(--border);">
+                            <option value="0">0%</option>
+                            <option value="1">1%</option>
+                            <option value="2">2%</option>
+                            <option value="3">3%</option>
+                            <option value="4">4%</option>
+                            <option value="5">5%</option>
+                        </select>
+                    </div>
                 </div>
 
                 <!-- ORDER PARSER -->
@@ -522,6 +475,23 @@
                 </p>
                 <div style="background: rgba(79, 70, 229, 0.1); padding: 10px; border-radius: 5px; margin-top: 15px;">
                     <strong>🤖 Модель:</strong> gpt-4o-mini (Default)
+                </div>
+
+                <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
+
+                <h3>☁️ Хмара (Supabase)</h3>
+                <label>Project URL:</label>
+                <input type="text" id="supabaseUrlInput" placeholder="https://xyz.supabase.co"
+                    onchange="saveSupabaseConfig()">
+
+                <label style="margin-top: 10px;">API Key (public/anon):</label>
+                <input type="password" id="supabaseKeyInput" placeholder="eyJhbGciOiJIUzI1NiIsIn..."
+                    onchange="saveSupabaseConfig()">
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn-success" onclick="testSupabaseConnection()">🔌 Перевірити з'єднання</button>
+                    <button class="btn-warning" onclick="syncWithCloud()">☁️ Зберегти в хмару</button>
+                    <button class="btn-danger" onclick="loadFromCloud()">📥 Відновити з хмари</button>
                 </div>
             </div>
         </div>
