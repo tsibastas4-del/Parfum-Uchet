@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="uk">
 
 <head>
@@ -9,19 +9,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#7c3aed">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
+    <!-- Global Top Controls (Settings/Theme) -->
+    <div class="top-controls">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Змінити тему">
+            <i id="theme-icon" class="fa-solid fa-moon"></i>
+        </button>
+        <button class="theme-toggle" onclick="openSettingsModal()" style="margin-left: 5px;">
+            <i class="fa-solid fa-cog"></i>
+        </button>
+    </div>
+
     <nav class="navbar">
         <div class="navbar-brand">
             <i class="fa-solid fa-spray-can-sparkles"></i> PerfumeFlow
-            <button class="theme-toggle" onclick="toggleTheme()" title="Змінити тему">
-                <i id="theme-icon" class="fa-solid fa-moon"></i>
-            </button>
-            <button class="theme-toggle" onclick="openSettingsModal()" style="margin-left: 5px;"><i
-                    class="fa-solid fa-cog"></i></button>
         </div>
 
         <div class="navbar-links">
@@ -33,6 +41,10 @@
                     class="fa-solid fa-clock-rotate-left"></i> Історія</button>
             <button class="nav-btn" onclick="showSection('tasks', this)"><i class="fa-solid fa-clipboard-list"></i>
                 Задачі</button>
+            <button class="nav-btn" onclick="showSection('ai-assistant', this)"><i class="fa-solid fa-robot"></i>
+                AI Помічник</button>
+            <button class="nav-btn" onclick="showSection('smm-creator', this)"><i class="fa-solid fa-camera-retro"></i>
+                SMM</button>
             <button class="nav-btn" onclick="showSection('admin-panel', this)"><i class="fa-solid fa-gears"></i>
                 Адмінка</button>
         </div>
@@ -46,16 +58,16 @@
             <h2>👋 Вітаємо! Огляд за сьогодні</h2>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h3>Виручка сьогодні</h3>
-                    <div class="value" id="dash-revenue">0 ₴</div>
+                    <h3>Виручка (за весь час)</h3>
+                    <div class="value" id="dash-revenue-value">0 ₴</div>
                 </div>
                 <div class="stat-card green">
-                    <h3>Прибуток сьогодні</h3>
-                    <div class="value" id="dash-profit">0 ₴</div>
+                    <h3>Чистий прибуток</h3>
+                    <div class="value" id="dash-net-profit-value">0 ₴</div>
                 </div>
                 <div class="stat-card" style="background: linear-gradient(135deg, #F59E0B, #D97706);">
-                    <h3>Продажів</h3>
-                    <div class="value" id="dash-count">0</div>
+                    <h3>Замовлень</h3>
+                    <div class="value" id="dash-orders-value">0</div>
                 </div>
                 <div class="stat-card danger" id="dash-low-stock-count">
                     <h3>Низький Запас</h3>
@@ -74,6 +86,19 @@
                     <canvas id="topProductsChart"></canvas>
                 </div>
             </div>
+
+            <!-- NEW ANALYTICS CHARTS -->
+            <div class="grid-2-col" style="margin-bottom: 20px;">
+                <div class="card">
+                    <h3>💰 Прибуток по місяцях (6 місяців)</h3>
+                    <canvas id="monthlyProfitChart"></canvas>
+                </div>
+                <div class="card">
+                    <h3>📊 Джерела продажів</h3>
+                    <canvas id="sourcesChart"></canvas>
+                </div>
+            </div>
+
             <div class="card">
                 <h3><i class="fa-solid fa-trophy"></i> Топ-5 Популярних Ароматів (за об'ємом)</h3>
                 <div class="table-responsive">
@@ -105,8 +130,43 @@
 
         <section id="tasks" class="content-section">
             <div class="card">
-                <h2><i class="fa-solid fa-clipboard-list"></i> Список Завдань</h2>
-                <div id="tasks-list-container" style="margin-top: 20px;"></div>
+                <h2><i class="fa-solid fa-list-check"></i> Керування Задачами</h2>
+
+                <div class="task-tabs">
+                    <div class="task-tab active" onclick="switchTaskTab('orders')" id="tab-orders">
+                        📦 Замовлення
+                    </div>
+                    <div class="task-tab" onclick="switchTaskTab('manual')" id="tab-manual">
+                        📝 Ручні Задачі
+                    </div>
+                </div>
+
+                <!-- Orders Tasks Tab -->
+                <div id="task-view-orders">
+                    <div id="orders-task-list" class="task-container">
+                        <!-- Order tasks populated here -->
+                    </div>
+                </div>
+
+                <!-- Manual Tasks Tab -->
+                <div id="task-view-manual" style="display: none;">
+                    <div
+                        style="margin-bottom: 20px; padding: 15px; background: rgba(var(--primary-rgb), 0.05); border-radius: 12px;">
+                        <h3 style="margin-top: 0;"><i class="fa-solid fa-robot"></i> AI Створення Задачі</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">
+                            Вставте будь-який текст (нотатку, повідомлення), і AI створить структуровану задачу.
+                        </p>
+                        <textarea id="manualTaskInput"
+                            placeholder="Напр: Треба відправити 5мл Баккари для Олени завтра зранку..."
+                            style="width: 100%; min-height: 80px; margin-bottom: 10px;"></textarea>
+                        <button class="btn-primary" onclick="createManualTaskAI()">
+                            <i class="fa-solid fa-magic"></i> Створити задачу за допомогою AI
+                        </button>
+                    </div>
+                    <div id="manual-task-list" class="task-container">
+                        <!-- Manual tasks populated here -->
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -160,7 +220,12 @@
                 <div
                     style="background: var(--bg-input); padding: 15px; border-radius: 8px; border: 1px dashed var(--border); margin-bottom: 15px;">
                     <div class="grid-2-col">
-                        <div><label>Парфум</label><input type="text" id="orderPerfumeName" list="perfumeList"></div>
+                        <div>
+                            <label>Парфум</label>
+                            <input type="text" id="orderPerfumeName" placeholder="Натисніть для вибору..." readonly
+                                onclick="openPerfumeSelector()"
+                                style="cursor: pointer; background-color: var(--bg-card);">
+                        </div>
                         <div><label>Об'єм</label><select id="orderFlaconVolume"></select></div>
                     </div>
                     <button class="btn-warning" style="margin-top: 10px;" onclick="addItemToOrder()"><i
@@ -181,6 +246,9 @@
                     </table>
                 </div>
 
+                <!-- NEW: Stock warnings container -->
+                <div id="order-stock-warnings" style="margin-top: 15px;"></div>
+
                 <div id="orderTotalSection"
                     style="margin: 20px 0; font-size: 1.2rem; font-weight: bold; text-align: right; color: var(--primary);">
                 </div>
@@ -190,6 +258,10 @@
                     style="margin-bottom: 10px;"></textarea>
                 <button class="btn-warning" onclick="copyOrderSummary()"><i class="fa-solid fa-copy"></i> Копіювати
                     текст</button>
+                <button class="btn-primary" onclick="generateAIOrderMessage()"
+                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                    <i class="fa-solid fa-robot"></i> 🤖 ШІ Повідомлення
+                </button>
                 <label>Номер ТТН (опційно)</label>
                 <input type="text" id="ttnNumberOrder" placeholder="Номер ТТН" style="margin-bottom: 20px;">
 
@@ -218,6 +290,19 @@
         <section id="transactions" class="content-section">
             <div class="card">
                 <h2><i class="fa-solid fa-history"></i> Історія Продажів</h2>
+
+                <!-- Week Navigation -->
+                <div class="week-navigation">
+                    <button class="btn-sm btn-primary" onclick="navigateWeek(-1)">
+                        <i class="fa-solid fa-chevron-left"></i> Попередній тиждень
+                    </button>
+                    <div class="current-week-display">
+                        <strong id="currentWeekLabel">Поточний тиждень</strong>
+                    </div>
+                    <button class="btn-sm btn-primary" onclick="navigateWeek(1)" id="nextWeekBtn">
+                        Наступний тиждень <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
                 <div class="grid-3-col" style="margin-bottom: 15px;">
                     <div><input type="text" id="transactionSearch" onkeyup="renderTransactionHistory()"
                             placeholder="🔍 Пошук..."></div>
@@ -253,6 +338,11 @@
                     <input type="text" id="clientSearchInput" list="clientList" placeholder="Введіть ім'я клієнта...">
                     <button class="btn-primary" style="width: auto;" onclick="showClientHistory()"><i
                             class="fa-solid fa-search"></i> Знайти</button>
+                    <button id="aiClientAnalysisBtn" class="btn-primary"
+                        style="width: auto; background: linear-gradient(135deg, #ec4899, #8b5cf6); display: none;"
+                        onclick="analyzeClientPreferences()">
+                        <i class="fa-solid fa-tags"></i> 🏷️ ШІ Аналіз уподобань
+                    </button>
                 </div>
                 <div id="clientCrmSummary"></div>
                 <div class="table-responsive">
@@ -269,7 +359,19 @@
                     </table>
                 </div>
             </div>
+
+            <!-- Analytics Actions -->
+            <div class="grid-2-col" style="margin-top: 20px;">
+                <button class="btn-success" onclick="exportToExcel()" style="width: 100%;">
+                    <i class="fa-solid fa-file-excel"></i> Експорт у Excel
+                </button>
+                <button class="btn-primary" onclick="forecastRevenue()" style="width: 100%;">
+                    <i class="fa-solid fa-chart-line"></i> Прогноз виручки (AI)
+                </button>
+            </div>
         </section>
+
+
 
         <section id="admin-panel" class="content-section">
             <div class="grid-2-col" style="margin-bottom: 20px;">
@@ -277,6 +379,68 @@
                 <button class="btn-primary" onclick="showSection('client-crm', null)">👥 База клієнтів (CRM)</button>
                 <button class="btn-primary" onclick="showSection('expenses', null)">💸 Додати Витрату</button>
                 <button class="btn-primary" onclick="showSection('calculator', null)">🧮 Калькулятор ціни</button>
+            </div>
+
+
+            <!-- GOOGLE SHEETS INTEGRATION (MOVED TO ADMIN) -->
+            <div class="card" style="border-left: 4px solid var(--success);">
+                <h3><i class="fa-solid fa-file-csv"></i> Синхронізація з Google Таблицями</h3>
+
+                <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+                    <label>Склад Розливних (мл)</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="sheetUrl" placeholder="URL CSV..."
+                            value="https://docs.google.com/spreadsheets/d/1Lhpfzzdduef8RTHJQ4yod_X1pzqm9Mtxf1qvUUj8ng4/export?format=csv&gid=0"
+                            style="flex: 1;">
+                        <button class="btn-secondary" onclick="syncWithGoogleSheet()" style="width: auto;">
+                            <i class="fa-solid fa-sync"></i> Синхронізувати МЛ
+                        </button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label>Склад Цілих Флаконів</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="bottleSheetUrl" placeholder="URL CSV для флаконів..."
+                            value="https://docs.google.com/spreadsheets/d/1Lhpfzzdduef8RTHJQ4yod_X1pzqm9Mtxf1qvUUj8ng4/export?format=csv&gid=760507089"
+                            style="flex: 1;">
+                        <button class="btn-warning" onclick="syncBottlesFromGoogleSheets()" style="width: auto;">
+                            <i class="fa-solid fa-sync"></i> Синхронізувати Флакони
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 10px;">
+                    <label
+                        style="display:flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:400; cursor:pointer;">
+                        <input type="checkbox" id="autoSyncOnLoad" style="width:auto;"
+                            onchange="toggleAutoSync(this.checked)">
+                        Авто-синхронізація при відкритті
+                    </label>
+                    <div id="lastSyncTime" style="font-size:0.75rem; color:var(--text-muted);"></div>
+                </div>
+
+                <!-- Reconciliation Report Area -->
+                <div id="reconciliationArea"
+                    style="display:none; margin-top: 15px; background: var(--bg-body); padding: 15px; border-radius: 12px;">
+                    <h4 style="color: var(--warning); margin-bottom: 10px;"><i
+                            class="fa-solid fa-exclamation-triangle"></i> Незнайдені позиції
+                        (<span id="reconcileCount">0</span>)</h4>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px;">Ці товари є в таблиці,
+                        але відсутні в базі CRM.</p>
+                    <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table" id="reconcileTable">
+                            <thead>
+                                <tr>
+                                    <th>Назва з Таблиці</th>
+                                    <th>Залишок</th>
+                                    <th>Дія</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <div class="card">
@@ -294,11 +458,48 @@
                     <div><label>Об'єм (мл)</label><input type="number" id="inventoryVolume" placeholder="Напр: 500">
                     </div>
                 </div>
-                <button class="btn-primary" onclick="addStock()"><i class="fa-solid fa-plus-square"></i> Додати
-                    Запас</button>
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button class="btn-primary" onclick="addStock()" style="width: auto;"><i
+                            class="fa-solid fa-plus-square"></i> Додати Запас</button>
+                    <button class="btn-primary" onclick="generateStockForecast()"
+                        style="background: linear-gradient(135deg, #f59e0b, #d97706); width: auto;">
+                        <i class="fa-solid fa-chart-line"></i> 📊 ШІ Прогноз Залишків
+                    </button>
+                </div>
+
+                <div id="stockForecastResult" style="display: none; margin-bottom: 20px;">
+                    <div class="card"
+                        style="background: rgba(var(--primary-rgb), 0.05); border-left: 5px solid #f59e0b; padding: 20px;">
+                        <h3>📈 Аналіз та Прогноз залишків</h3>
+                        <div id="stockForecastContent" style="font-size: 0.95rem; line-height: 1.6;"></div>
+                        <button class="btn-sm btn-danger" style="margin-top: 15px; width: auto;"
+                            onclick="document.getElementById('stockForecastResult').style.display='none'">Закрити
+                            звіт</button>
+                    </div>
+                </div>
 
                 <h4 style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">Поточні залишки:
                 </h4>
+
+                <!-- Search + Filter Row -->
+                <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 180px; position: relative;">
+                        <i class="fa-solid fa-search"
+                            style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;"></i>
+                        <input type="text" id="inventorySearchInput" placeholder="Пошук залишків..."
+                            oninput="renderInventoryList()" style="padding-left: 32px; margin-bottom: 0;">
+                    </div>
+                </div>
+
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <button class="filter-chip active" onclick="filterStockByGender('all', this)">Всі</button>
+                        <button class="filter-chip" onclick="filterStockByGender('Жіночий', this)">👩 Жіночі</button>
+                        <button class="filter-chip" onclick="filterStockByGender('Чоловічий', this)">👨
+                            Чоловічі</button>
+                        <button class="filter-chip" onclick="filterStockByGender('Унісекс', this)">🚻 Унісекс</button>
+                    </div>
+                </div>
                 <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                     <table id="inventory-list-table">
                         <thead>
@@ -309,6 +510,45 @@
                             </tr>
                         </thead>
                         <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- NEW: BOTTLE STOCK SECTION -->
+            <div class="card">
+                <h2><i class="fa-solid fa-box-open"></i> Склад Цілих Флаконів</h2>
+                <div class="admin-form-box" style="margin-bottom: 20px;">
+                    <div class="grid-3-col" style="margin-bottom: 15px;">
+                        <div>
+                            <label>Назва флакону</label>
+                            <input type="text" id="adminBottleName" placeholder="Напр: Armani Code 125ml">
+                        </div>
+                        <div>
+                            <label>Прив'язка до парфуму (з довідника)</label>
+                            <input type="text" id="adminBottleLinked" list="perfumeList"
+                                placeholder="Оберіть парфум...">
+                        </div>
+                        <div>
+                            <label>Кількість (шт)</label>
+                            <input type="number" id="adminBottleQty" placeholder="1" min="1" value="1">
+                        </div>
+                    </div>
+                    <button class="btn-success" onclick="addWholeBottle()"><i class="fa-solid fa-plus"></i> Додати
+                        Флакон</button>
+                    <!-- <button class="btn-warning" onclick="syncBottlesFromGoogleSheets()" style="margin-left: 10px;"><i class="fa-solid fa-sync"></i> Оновити з Google Sheets</button> -->
+                </div>
+
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table" id="bottle-list-table">
+                        <thead>
+                            <tr>
+                                <th>Назва флакону</th>
+                                <th>Парфум (прив'язка)</th>
+                                <th class="text-right">Кількість (шт)</th>
+                                <th class="text-right">Дія</th>
+                            </tr>
+                        </thead>
+                        <tbody><!-- renderBottleList() will populate here --></tbody>
                     </table>
                 </div>
             </div>
@@ -326,20 +566,79 @@
 
             <div class="card">
                 <h2><i class="fa-solid fa-database"></i> Довідник Парфумів</h2>
-                <div
-                    style="margin-bottom: 15px; background: var(--bg-input); padding: 15px; border-radius: 8px; border: 1px solid var(--border);">
+                <div class="admin-form-box">
                     <div class="grid-3-col" style="margin-bottom: 10px;">
-                        <div><input type="text" id="adminPerfumeName" placeholder="Назва парфуму"></div>
-                        <div><input type="number" id="adminBasePrice" placeholder="С/С (грн/мл)"></div>
-                        <div><input type="text" id="adminBarcode" placeholder="Штрих-код"></div>
+                        <div>
+                            <label>Назва парфуму</label>
+                            <div style="display: flex; gap: 5px;">
+                                <input type="text" id="adminPerfumeName" placeholder="Назва парфуму">
+                                <button class="btn-primary" onclick="autoFillPerfumeData()"
+                                    title="✨ AI Автозаповнення за назвою" style="width: auto; padding: 0 15px;">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> AI
+                                </button>
+                            </div>
+                        </div>
+                        <div><label>С/С (грн/мл)</label><input type="number" id="adminBasePrice" placeholder="0.00">
+                        </div>
+                        <div><label>Штрих-код</label><input type="text" id="adminBarcode" placeholder="Barcode"></div>
+                        <div>
+                            <select id="adminGender">
+                                <option value="">Оберіть стать</option>
+                                <option value="Жіночий">👩 Жіночий</option>
+                                <option value="Чоловічий">👨 Чоловічий</option>
+                                <option value="Унісекс">🚻 Унісекс</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2-col" style="margin-bottom: 10px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label style="margin-bottom: 0; white-space: nowrap;">Сезон:</label>
+                            <label style="display: inline-flex; align-items: center; gap: 4px; font-weight: 400;"><input
+                                    type="checkbox" name="adminSeason" value="Літо" style="width: auto;"> ☀️
+                                Літо</label>
+                            <label style="display: inline-flex; align-items: center; gap: 4px; font-weight: 400;"><input
+                                    type="checkbox" name="adminSeason" value="Зима" style="width: auto;"> ❄️
+                                Зима</label>
+                        </div>
+                        <input type="text" id="adminTags" placeholder="Теги (через кому: свіжий, амбра...)">
                     </div>
                     <div class="grid-2-col" style="margin-bottom: 10px;">
                         <input type="number" id="adminDiscountVolume" placeholder="Об'єм для знижки (мл)" value="5">
                         <input type="number" id="adminDiscountPrice" placeholder="С/С зі знижкою (грн/мл)">
                     </div>
+                    <div style="margin-bottom: 10px;">
+                        <label>Піраміда аромату (Верхні, серце, база)</label>
+                        <textarea id="adminPyramid" rows="2"
+                            placeholder="Напр: Верхні: Лимон, М'ята; Ноти серця: Жасмин; База: Кедр..."></textarea>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label>Опис аромату (характер, для кого, куди носити)</label>
+                        <textarea id="adminDescription" rows="3" placeholder="Опишіть аромат детально..."></textarea>
+                    </div>
                     <button class="btn-success" onclick="addOrUpdatePerfume()"><i class="fa-solid fa-save"></i>
                         Зберегти/Оновити</button>
                 </div>
+
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <button class="filter-chip active"
+                            onclick="setCatalogFilter('gender', 'all', this)">Всі</button>
+                        <button class="filter-chip" onclick="setCatalogFilter('gender', 'Жіночий', this)">👩
+                            Жіночі</button>
+                        <button class="filter-chip" onclick="setCatalogFilter('gender', 'Чоловічий', this)">👨
+                            Чоловічі</button>
+                        <button class="filter-chip" onclick="setCatalogFilter('gender', 'Унісекс', this)">🚻
+                            Унісекс</button>
+                    </div>
+                    <div class="filter-group">
+                        <button class="filter-chip active" onclick="setCatalogFilter('season', 'all', this)">Будь-який
+                            сезон</button>
+                        <button class="filter-chip" onclick="setCatalogFilter('season', 'Літо', this)">☀️ Літні</button>
+                        <button class="filter-chip" onclick="setCatalogFilter('season', 'Зима', this)">❄️
+                            Зимові</button>
+                    </div>
+                </div>
+
                 <input type="text" id="perfumeSearchInput" onkeyup="renderPerfumeList()"
                     placeholder="🔍 Пошук у довіднику..." style="margin-bottom: 10px;">
                 <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
@@ -393,6 +692,108 @@
                     (Text):</h4>
                 <button class="btn-warning" onclick="showSyncModal()"><i class="fa-solid fa-link"></i> Відкрити Модальне
                     вікно</button>
+            </div>
+        </section>
+
+        <section id="ai-assistant" class="content-section">
+            <div class="card">
+                <h2><i class="fa-solid fa-robot"></i> AI Універсальний Помічник</h2>
+                <p style="color:var(--text-muted); margin-bottom: 15px;">Я — ваш персональний менеджер. Вставте діалог з
+                    клієнтом, і я допоможу з порадами, розрахунками та підбором ароматів.</p>
+
+                <div class="parser-area" style="min-height: 200px; display: flex; flex-direction: column;">
+                    <textarea id="adminAiChatInput"
+                        placeholder="Вставте діалог або запитання тут (напр: 'Порадь щось схоже на Baccarat Rouge та порахуй олх доставку')..."
+                        style="flex-grow: 1; min-height: 120px;"></textarea>
+                    <button class="btn-primary" style="margin-top: 10px;" onclick="runAdminAI()">
+                        <i class="fa-solid fa-paper-plane"></i> Запитати AI
+                    </button>
+                </div>
+
+                <div id="adminAiResponse" class="card"
+                    style="display: none; background: rgba(var(--primary-rgb), 0.05); border-left: 4px solid var(--primary); margin-top: 20px;">
+                    <div style="font-weight: 700; margin-bottom: 10px; color: var(--primary);">🤖 Відповідь AI:</div>
+                    <div id="adminAiResponseContent" style="line-height: 1.6; white-space: pre-wrap;"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="smm-creator" class="content-section">
+            <div class="card">
+                <h2><i class="fa-solid fa-camera-retro"></i> SMM Creator — Telegram & Instagram</h2>
+                <p style="color: var(--text-muted); margin-bottom: 20px;">
+                    Створюйте контент для соціальних мереж з AI-підтримкою
+                </p>
+
+                <div class="platform-selector" style="margin-bottom: 20px; display: flex; gap: 10px;">
+                    <button class="filter-chip active" id="platform-tg" onclick="setSmmPlatform('telegram')">
+                        <i class="fa-brands fa-telegram"></i> Telegram
+                    </button>
+                    <button class="filter-chip" id="platform-inst" onclick="setSmmPlatform('instagram')">
+                        <i class="fa-brands fa-instagram"></i> Instagram
+                    </button>
+                </div>
+
+                <div class="grid-2-col">
+                    <div>
+                        <h3 style="margin-top: 0;">📋 Налаштування картки</h3>
+                        <label>Оберіть парфум:</label>
+                        <select id="smmPerfumeSelect"></select>
+                        <label style="margin-top: 15px;">Завантажте фото:</label>
+                        <input type="file" id="smmPhotoUpload" accept="image/*"
+                            style="padding: 10px; border: 2px dashed var(--border); border-radius: 6px;">
+                        <button class="btn-primary" onclick="generateSMMPreview()"
+                            style="margin-top: 20px; width: 100%;">
+                            <i class="fa-solid fa-robot"></i> 🤖 Згенерувати превью з AI
+                        </button>
+                    </div>
+                    <div>
+                        <h3 style="margin-top: 0;">👁️ Превью</h3>
+                        <div id="smmPreviewArea"
+                            style="border: 1px solid var(--border); border-radius: 8px; padding: 15px; min-height: 300px; background: var(--bg-input);">
+                            <p style="text-align: center; color: var(--text-muted); padding: 40px;">Превью з'явиться тут
+                            </p>
+                        </div>
+                        <div style="display: flex; gap: 10px; margin-top: 15px;">
+                            <button class="btn-secondary" id="postTgBtn" onclick="postToTelegram()" style="flex: 2;">
+                                <i class="fa-brands fa-telegram"></i> Опублікувати
+                            </button>
+                            <button class="btn-primary" id="copySmmBtn" onclick="copySmmToClipboard()"
+                                style="flex: 1; min-width: auto; display: none;">
+                                <i class="fa-solid fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Auto-Post Section -->
+                <div
+                    style="margin-top: 30px; padding: 20px; background: rgba(245, 158, 11, 0.1); border-radius: 12px; border-left: 4px solid var(--secondary);">
+                    <h3 style="margin-top: 0; color: var(--secondary);">
+                        <i class="fa-solid fa-fire"></i> Швидкий підбір (Список)
+                    </h3>
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px;">
+                        Згенерувати та опублікувати тематичний список ароматів
+                    </p>
+                    <div style="margin-bottom: 15px;">
+                        <label>Виберіть категорію:</label>
+                        <select id="smmListCategory" style="margin-top: 5px;">
+                            <option value="popular">🔥 Топ-5 Продажів</option>
+                            <option value="winter">❄️ 5 Зимових (Рандом)</option>
+                            <option value="summer">☀️ 5 Літніх (Рандом)</option>
+                            <option value="fresh">🌿 5 Свіжих (Рандом)</option>
+                            <option value="random">🎲 5 Випадкових</option>
+                        </select>
+                    </div>
+                    <button class="btn-warning" id="postCategorizedBtn" onclick="postCategorizedListToTelegram()"
+                        style="width: 100%;">
+                        <i class="fa-solid fa-paper-plane"></i> Сформувати та надіслати
+                    </button>
+                    <button class="btn-primary" id="copyCategorizedBtn" onclick="copyCategorizedListToClipboard()"
+                        style="width: 100%; margin-top: 10px; display: none;">
+                        <i class="fa-solid fa-copy"></i> Копіювати для Instagram
+                    </button>
+                </div>
             </div>
         </section>
 
@@ -467,14 +868,36 @@
                 <button onclick="closeSettingsModal()" class="btn-sm btn-danger">X</button>
             </div>
             <div class="modal-body">
-                <label>🔑 OpenAI / Gemini API Key:</label>
-                <input type="password" id="apiKeyInput" placeholder="sk-..." onchange="saveApiKey(this.value)">
+                <label>🔑 Gemini API Key:</label>
+                <input type="text" id="apiKeyInput" value="AIzaSyDYtCM1M61MG18zX3KZD2jfwofLmKvPG9U"
+                    placeholder="AIzaSy..." onchange="saveApiKey(this.value)">
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">
                     Ключ зберігається лише у вашому браузері (Local Storage). <br>
-                    <a href="https://platform.openai.com/api-keys" target="_blank">Отримати ключ OpenAI</a>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank">Отримати ключ Gemini</a>
                 </p>
-                <div style="background: rgba(79, 70, 229, 0.1); padding: 10px; border-radius: 5px; margin-top: 15px;">
-                    <strong>🤖 Модель:</strong> gpt-4o-mini (Default)
+                <div
+                    style="background: rgba(var(--primary-rgb), 0.1); padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 3px solid var(--primary);">
+                    <label>🤖 Модель ШІ:</label>
+                    <select id="geminiModelSelect" onchange="localStorage.setItem('gemini_model', this.value)"
+                        style="margin-top: 5px;">
+                        <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (Краща квота)</option>
+                        <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (Найновіша)</option>
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Швидка)</option>
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Потужна)</option>
+                    </select>
+                </div>
+
+                <h3>📱 Telegram Bot</h3>
+                <label>Bot Token:</label>
+                <input type="text" id="telegramBotTokenInput" placeholder="1234567890:ABCD..."
+                    onchange="saveTelegramConfig()">
+
+                <label style="margin-top: 10px;">Channel ID:</label>
+                <input type="text" id="telegramChannelIdInput" placeholder="@channel або -1001234567890"
+                    onchange="saveTelegramConfig()">
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn-success" onclick="testTelegramConnection()">🔌 Тест підключення</button>
                 </div>
 
                 <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border);">
@@ -500,12 +923,84 @@
         </div>
     </div>
 
+    <!-- FAB (Floating Action Button) -->
+    <div class="fab-container">
+        <button class="fab-button" onclick="toggleFabMenu()" aria-label="Швидкі дії">
+            <i class="fa-solid fa-plus" id="fab-icon"></i>
+        </button>
+        <div class="fab-menu" id="fabMenu">
+            <button class="fab-menu-item" onclick="fabAction('order')" title="Створити замовлення">
+                <i class="fa-solid fa-basket-shopping"></i>
+                <span>Замовлення</span>
+            </button>
+            <button class="fab-menu-item" onclick="fabAction('scan')" title="Сканувати штрих-код">
+                <i class="fa-solid fa-barcode"></i>
+                <span>Скан</span>
+            </button>
+            <button class="fab-menu-item" onclick="fabAction('task')" title="Додати задачу">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>Задача</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- PERFUME SELECTOR MODAL -->
+    <div id="perfumeSelectorModal" class="modal">
+        <div class="modal-content" style="max-height: 80vh;">
+            <div class="modal-header">
+                <h3 style="margin:0;"><i class="fa-solid fa-search"></i> Вибір Парфуму</h3>
+                <button class="btn-sm btn-danger" style="width:auto" onclick="closePerfumeSelector()"><i
+                        class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 10px 15px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="position: relative;">
+                    <i class="fa-solid fa-search"
+                        style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--text-muted); pointer-events:none;"></i>
+                    <input type="text" id="perfumeSelectorSearch" placeholder="Пошук (назва, код, тег)..."
+                        oninput="renderPerfumeSelector()" style="padding-left: 32px; margin-bottom: 0;">
+                </div>
+                <!-- Categories Quick Filters -->
+                <div style="display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none;">
+                    <button class="filter-chip active" style="padding: 4px 10px; font-size: 0.75rem;"
+                        onclick="filterPerfumeSelectorCategory('all', this)">Всі</button>
+                    <button class="filter-chip" style="padding: 4px 10px; font-size: 0.75rem;"
+                        onclick="filterPerfumeSelectorCategory('Жіночий', this)">👩 Жіночі</button>
+                    <button class="filter-chip" style="padding: 4px 10px; font-size: 0.75rem;"
+                        onclick="filterPerfumeSelectorCategory('Чоловічий', this)">👨 Чоловічі</button>
+                    <button class="filter-chip" style="padding: 4px 10px; font-size: 0.75rem;"
+                        onclick="filterPerfumeSelectorCategory('Унісекс', this)">🚻 Унісекс</button>
+                </div>
+                <div class="table-responsive" style="flex: 1; overflow-y: auto; margin: 0; min-height: 200px;">
+                    <table class="table" id="perfume-selector-table" style="min-width: 100%;">
+                        <thead style="position: sticky; top: 0; z-index: 10; background: var(--bg-input);">
+                            <tr>
+                                <th>Назва</th>
+                                <th class="text-right">Ціна (₴)</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <datalist id="perfumeList"></datalist>
     <datalist id="clientList"></datalist>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
+    <script src="telegram.js"></script>
 
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => console.log('ServiceWorker registration successful'))
+                    .catch(err => console.log('ServiceWorker registration failed: ', err));
+            });
+        }
+    </script>
 </body>
 
 </html>
